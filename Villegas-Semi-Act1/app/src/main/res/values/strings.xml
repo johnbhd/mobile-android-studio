@@ -1,3 +1,15 @@
 <resources>
     <string name="app_name">Villegas-Semi-Act1</string>
+    <string name="title">Addition App</string>
+    <string name="text1">Enter First Number:</string>
+    <string name="edit1">Input Number Here</string>
+
+    <string name="text2">Enter Second Number:</string>
+    <string name="edit2">Input Number Here</string>
+
+    <string name="text3">Result:</string>
+    <string name="edit3">Display Result Here</string>
+
+    <string name="button1">COMPUTE</string>
+
 </resources>
