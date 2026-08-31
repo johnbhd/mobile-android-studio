@@ -1,0 +1,46 @@
+# Android Studio
+**/.idea/
+*.iml
+
+# Gradle
+**/.gradle/
+**/build/
+**/app/build/
+
+# Local SDK paths
+**/local.properties
+
+# Native build files
+**/.externalNativeBuild/
+**/.cxx/
+
+# Captures
+**/captures/
+
+# Generated APK / AAB
+*.apk
+*.aab
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Temporary files
+*.tmp
+*.temp
+
+# Keystore / signing files
+*.jks
+*.keystore
+
+# Android Studio profiling
+**/.idea/caches/
+**/.idea/workspace.xml
+
+# Kotlin / Java generated
+**/out/
+
+**/workflows
