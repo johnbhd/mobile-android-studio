@@ -1,0 +1,39 @@
+<resources>
+
+    <string name="app_name">Villegas_MultipleIntentsApp</string>
+
+    <string name="title">Multiple Intents App</string>
+
+    <string name="text1">Enter First Number:</string>
+    <string name="edit1">Input Number Here</string>
+
+    <string name="text2">Enter Second Number:</string>
+    <string name="edit2">Input Number Here</string>
+
+    <string name="text3">Result:</string>
+    <string name="edit3">Display Result Here</string>
+
+    <string name="button1">COMPUTE</string>
+    <string name="button2">PRODUCT</string>
+    <string name="button3">DIFFERENCE</string>
+    <string name="button4">QUOTIENT</string>
+    <string name="button5">CLEAR</string>
+    <string name="button6">UNIT CONVERTER</string>
+
+
+    <string name="converter_title">Unit Converter</string>
+    <string name="length_title">Length Converter</string>
+    <string name="meter_label">Meters to Centimeters:</string>
+    <string name="meter_hint">Enter Meters</string>
+    <string name="convert_length">CONVERT LENGTH</string>
+    <string name="length_result">Centimeters Result</string>
+
+    <string name="temp_title">Temperature Converter</string>
+    <string name="celsius_label">Celsius to Fahrenheit:</string>
+    <string name="celsius_hint">Enter Celsius</string>
+    <string name="convert_temperature">CONVERT TEMPERATURE</string>
+    <string name="temp_result">Fahrenheit Result</string>
+
+    <string name="back_button">BACK</string>
+
+</resources>
