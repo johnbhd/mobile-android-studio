@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="mt_bg">#0F1623</color>
+    <color name="mt_surface">#1A2333</color>
+    <color name="mt_surface_alt">#222C3F</color>
+    <color name="mt_key">#2E394B</color>
+    <color name="mt_blue">#2B6BFF</color>
+    <color name="mt_stroke">#3A4558</color>
+    <color name="mt_text">#FFFFFF</color>
+    <color name="mt_text_muted">#9AA5B8</color>
+    <color name="mt_ripple">#33FFFFFF</color>
+</resources>

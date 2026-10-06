@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <style name="mt_title">
+        <item name="android:gravity">center</item>
+        <item name="android:textColor">@color/mt_text</item>
+        <item name="android:textSize">20sp</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+
+    <style name="mt_tab_label">
+        <item name="android:textSize">12sp</item>
+        <item name="android:textColor">@color/mt_text_muted</item>
+        <item name="android:layout_marginTop">2dp</item>
+    </style>
+
+    <style name="mt_section_title">
+        <item name="android:textColor">@color/mt_text</item>
+        <item name="android:textSize">20sp</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+
+    <style name="mt_subtitle">
+        <item name="android:textColor">@color/mt_text_muted</item>
+        <item name="android:textSize">12sp</item>
+    </style>
+
+    <style name="mt_label">
+        <item name="android:textColor">@color/mt_text</item>
+        <item name="android:textSize">14sp</item>
+        <item name="android:layout_marginTop">16dp</item>
+        <item name="android:layout_marginBottom">6dp</item>
+    </style>
+
+    <!-- Calculator display -->
+    <style name="mt_expression">
+        <item name="android:gravity">end</item>
+        <item name="android:maxLines">1</item>
+        <item name="android:textColor">@color/mt_text_muted</item>
+        <item name="android:textSize">18sp</item>
+    </style>
+
+    <style name="mt_result">
+        <item name="android:gravity">end|center_vertical</item>
+        <item name="android:maxLines">1</item>
+        <item name="android:textColor">@color/mt_text</item>
+        <item name="android:textSize">56sp</item>
+        <item name="android:autoSizeTextType">uniform</item>
+        <item name="android:autoSizeMinTextSize">24sp</item>
+        <item name="android:autoSizeMaxTextSize">56sp</item>
+    </style>
+
+    <!-- Calculator keys -->
+    <style name="mt_key">
+        <item name="android:gravity">center</item>
+        <item name="android:textColor">@color/mt_text</item>
+        <item name="android:textSize">28sp</item>
+        <item name="android:fontFamily">sans-serif-medium</item>
+        <item name="android:clickable">true</item>
+        <item name="android:focusable">true</item>
+    </style>
+    <style name="mt_key_num" parent="@style/mt_key">
+        <item name="android:background">@drawable/mt_key_num</item>
+    </style>
+    <style name="mt_key_op" parent="@style/mt_key">
+        <item name="android:background">@drawable/mt_key_op</item>
+    </style>
+
+    <!-- Converter -->
+    <style name="mt_spinner">
+        <item name="android:background">@drawable/mt_bg_spinner</item>
+        <item name="android:popupBackground">@color/mt_surface</item>
+    </style>
+
+    <style name="mt_spinner_text">
+        <item name="android:textColor">@color/mt_text</item>
+        <item name="android:textSize">16sp</item>
+        <item name="android:gravity">center_vertical</item>
+        <item name="android:paddingStart">16dp</item>
+        <item name="android:paddingEnd">16dp</item>
+        <item name="android:paddingTop">12dp</item>
+        <item name="android:paddingBottom">12dp</item>
+    </style>
+
+    <style name="mt_input">
+        <item name="android:background">@drawable/mt_bg_input</item>
+        <item name="android:textColor">@color/mt_text</item>
+        <item name="android:textColorHint">@color/mt_text_muted</item>
+        <item name="android:textSize">18sp</item>
+        <item name="android:paddingStart">16dp</item>
+        <item name="android:paddingEnd">16dp</item>
+        <item name="android:gravity">center_vertical</item>
+    </style>
+
+    <style name="mt_convert_button">
+        <item name="android:background">@drawable/mt_btn_convert</item>
+        <item name="android:gravity">center</item>
+        <item name="android:text">Convert</item>
+        <item name="android:textColor">@color/mt_text</item>
+        <item name="android:textSize">18sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:clickable">true</item>
+        <item name="android:focusable">true</item>
+    </style>
+</resources>
