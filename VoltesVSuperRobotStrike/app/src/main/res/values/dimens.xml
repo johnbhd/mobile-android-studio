@@ -6,4 +6,20 @@
     <dimen name="main_menu_button_height">52dp</dimen>
     <dimen name="main_menu_button_spacing">8dp</dimen>
     <dimen name="main_menu_corner_radius">10dp</dimen>
+    <dimen name="machine_selection_header_height">56dp</dimen>
+    <dimen name="machine_selection_content_spacing">12dp</dimen>
+    <dimen name="machine_card_spacing">10dp</dimen>
+    <dimen name="machine_card_min_height">188dp</dimen>
+    <dimen name="machine_card_padding">10dp</dimen>
+    <dimen name="machine_card_content_spacing">8dp</dimen>
+    <dimen name="machine_image_size">96dp</dimen>
+    <dimen name="pilot_image_size">64dp</dimen>
+    <dimen name="machine_stat_spacing">4dp</dimen>
+    <dimen name="machine_stat_label_width">48dp</dimen>
+    <dimen name="machine_stat_value_width">28dp</dimen>
+    <dimen name="machine_stat_segment_height">6dp</dimen>
+    <dimen name="machine_stat_segment_spacing">2dp</dimen>
+    <dimen name="machine_select_button_width">92dp</dimen>
+    <dimen name="machine_select_button_height">40dp</dimen>
+    <dimen name="machine_selection_continue_height">52dp</dimen>
 </resources>

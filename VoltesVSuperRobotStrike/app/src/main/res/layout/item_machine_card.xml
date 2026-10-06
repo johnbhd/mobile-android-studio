@@ -1,0 +1,254 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/machine_card_root"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@drawable/machine_card_background"
+    android:clickable="true"
+    android:elevation="2dp"
+    android:focusable="true"
+    android:minHeight="@dimen/machine_card_min_height"
+    android:padding="@dimen/machine_card_padding">
+
+    <ImageView
+        android:id="@+id/machine_image"
+        android:layout_width="@dimen/machine_image_size"
+        android:layout_height="@dimen/machine_image_size"
+        android:contentDescription="@null"
+        android:importantForAccessibility="no"
+        android:scaleType="fitCenter"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <ImageView
+        android:id="@+id/pilot_image"
+        android:layout_width="@dimen/pilot_image_size"
+        android:layout_height="@dimen/pilot_image_size"
+        android:contentDescription="@null"
+        android:importantForAccessibility="no"
+        android:layout_marginStart="@dimen/machine_card_content_spacing"
+        android:scaleType="centerCrop"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toEndOf="@id/machine_image"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <LinearLayout
+        android:id="@+id/machine_card_info"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:layout_marginStart="@dimen/machine_card_content_spacing"
+        android:orientation="vertical"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toEndOf="@id/pilot_image"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <TextView
+            android:id="@+id/machine_name"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:fontFamily="sans-serif-condensed"
+            android:textColor="@color/menu_text_secondary"
+            android:textSize="16sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/pilot_name"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:fontFamily="sans-serif-condensed"
+            android:textColor="@color/machine_text_muted"
+            android:textSize="11sp" />
+
+        <LinearLayout
+            android:id="@+id/speed_row"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/machine_stat_spacing"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <TextView
+                android:layout_width="@dimen/machine_stat_label_width"
+                android:layout_height="wrap_content"
+                android:text="@string/machine_stat_speed"
+                android:textColor="@color/machine_text_muted"
+                android:textSize="9sp"
+                android:textStyle="bold" />
+
+            <LinearLayout
+                android:id="@+id/speed_stat_bar"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <View
+                    android:layout_width="0dp"
+                    android:layout_height="@dimen/machine_stat_segment_height"
+                    android:layout_weight="1"
+                    android:background="@drawable/machine_stat_segment_empty" />
+
+                <View
+                    android:layout_width="0dp"
+                    android:layout_height="@dimen/machine_stat_segment_height"
+                    android:layout_marginStart="@dimen/machine_stat_segment_spacing"
+                    android:layout_weight="1"
+                    android:background="@drawable/machine_stat_segment_empty" />
+
+                <View
+                    android:layout_width="0dp"
+                    android:layout_height="@dimen/machine_stat_segment_height"
+                    android:layout_marginStart="@dimen/machine_stat_segment_spacing"
+                    android:layout_weight="1"
+                    android:background="@drawable/machine_stat_segment_empty" />
+
+                <View
+                    android:layout_width="0dp"
+                    android:layout_height="@dimen/machine_stat_segment_height"
+                    android:layout_marginStart="@dimen/machine_stat_segment_spacing"
+                    android:layout_weight="1"
+                    android:background="@drawable/machine_stat_segment_empty" />
+
+                <View
+                    android:layout_width="0dp"
+                    android:layout_height="@dimen/machine_stat_segment_height"
+                    android:layout_marginStart="@dimen/machine_stat_segment_spacing"
+                    android:layout_weight="1"
+                    android:background="@drawable/machine_stat_segment_empty" />
+
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/speed_value"
+                android:layout_width="@dimen/machine_stat_value_width"
+                android:layout_height="wrap_content"
+                android:gravity="end"
+                android:textColor="@color/menu_gold"
+                android:textSize="9sp"
+                android:textStyle="bold" />
+
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/attack_row"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/machine_stat_spacing"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <TextView
+                android:layout_width="@dimen/machine_stat_label_width"
+                android:layout_height="wrap_content"
+                android:text="@string/machine_stat_attack"
+                android:textColor="@color/machine_text_muted"
+                android:textSize="9sp"
+                android:textStyle="bold" />
+
+            <LinearLayout
+                android:id="@+id/attack_stat_bar"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <View
+                    android:layout_width="0dp"
+                    android:layout_height="@dimen/machine_stat_segment_height"
+                    android:layout_weight="1"
+                    android:background="@drawable/machine_stat_segment_empty" />
+
+                <View
+                    android:layout_width="0dp"
+                    android:layout_height="@dimen/machine_stat_segment_height"
+                    android:layout_marginStart="@dimen/machine_stat_segment_spacing"
+                    android:layout_weight="1"
+                    android:background="@drawable/machine_stat_segment_empty" />
+
+                <View
+                    android:layout_width="0dp"
+                    android:layout_height="@dimen/machine_stat_segment_height"
+                    android:layout_marginStart="@dimen/machine_stat_segment_spacing"
+                    android:layout_weight="1"
+                    android:background="@drawable/machine_stat_segment_empty" />
+
+                <View
+                    android:layout_width="0dp"
+                    android:layout_height="@dimen/machine_stat_segment_height"
+                    android:layout_marginStart="@dimen/machine_stat_segment_spacing"
+                    android:layout_weight="1"
+                    android:background="@drawable/machine_stat_segment_empty" />
+
+                <View
+                    android:layout_width="0dp"
+                    android:layout_height="@dimen/machine_stat_segment_height"
+                    android:layout_marginStart="@dimen/machine_stat_segment_spacing"
+                    android:layout_weight="1"
+                    android:background="@drawable/machine_stat_segment_empty" />
+
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/attack_value"
+                android:layout_width="@dimen/machine_stat_value_width"
+                android:layout_height="wrap_content"
+                android:gravity="end"
+                android:textColor="@color/menu_gold"
+                android:textSize="9sp"
+                android:textStyle="bold" />
+
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/type_value"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/machine_stat_spacing"
+            android:fontFamily="sans-serif-condensed"
+            android:textColor="@color/machine_text_muted"
+            android:textSize="10sp"
+            android:textStyle="bold" />
+
+        <LinearLayout
+            android:id="@+id/machine_card_action_row"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/machine_stat_spacing"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <TextView
+                android:id="@+id/selected_label"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:fontFamily="sans-serif-condensed"
+                android:text="@string/action_selected"
+                android:textColor="@color/menu_gold"
+                android:textSize="10sp"
+                android:textStyle="bold"
+                android:visibility="gone" />
+
+            <Button
+                android:id="@+id/select_button"
+                android:layout_width="@dimen/machine_select_button_width"
+                android:layout_height="@dimen/machine_select_button_height"
+                android:background="@drawable/machine_select_button"
+                android:fontFamily="sans-serif-condensed"
+                android:stateListAnimator="@null"
+                android:text="@string/action_select"
+                android:textColor="@color/machine_select_button_text"
+                android:textSize="10sp"
+                android:textStyle="bold" />
+
+        </LinearLayout>
+
+    </LinearLayout>
+
+</androidx.constraintlayout.widget.ConstraintLayout>

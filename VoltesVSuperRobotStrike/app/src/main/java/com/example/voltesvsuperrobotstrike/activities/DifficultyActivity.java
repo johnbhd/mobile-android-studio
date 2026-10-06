@@ -14,6 +14,8 @@ import com.example.voltesvsuperrobotstrike.R;
 
 public class DifficultyActivity extends AppCompatActivity {
 
+    public static final String EXTRA_SELECTED_MACHINE = "selected_machine_id";
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);

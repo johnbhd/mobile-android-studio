@@ -15,4 +15,9 @@
     <color name="menu_overlay_start">#0006152E</color>
     <color name="menu_overlay_middle">#2606152E</color>
     <color name="menu_overlay_end">#B306152E</color>
+    <color name="machine_cyan">#FF5CD6FF</color>
+    <color name="machine_card_fill">#CC071D38</color>
+    <color name="machine_card_fill_selected">#E6172A40</color>
+    <color name="machine_text_muted">#FFC3D5E8</color>
+    <color name="machine_stat_empty">#553A6A88</color>
 </resources>

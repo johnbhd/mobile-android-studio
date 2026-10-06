@@ -1,35 +1,125 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
-    android:id="@+id/main"
+    android:id="@+id/machine_selection_root"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:gravity="center_horizontal"
-    android:orientation="vertical"
-    android:padding="@dimen/screen_padding"
+    android:background="@color/menu_navy"
+    android:clipToPadding="false"
     tools:context=".activities.MachineSelectionActivity">
 
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:gravity="center"
-        android:text="@string/machine_selection_title"
-        android:textSize="24sp"
-        android:textStyle="bold" />
+    <LinearLayout
+        android:id="@+id/machine_selection_header"
+        android:layout_width="0dp"
+        android:layout_height="@dimen/machine_selection_header_height"
+        android:background="@drawable/machine_header_background"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingStart="@dimen/machine_card_padding"
+        android:paddingEnd="@dimen/machine_card_padding"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
 
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="@dimen/content_spacing"
-        android:gravity="center"
-        android:text="@string/machine_selection_placeholder" />
+        <ImageButton
+            android:id="@+id/back_button"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:background="@android:color/transparent"
+            android:contentDescription="@string/action_back"
+            android:padding="12dp"
+            android:src="@drawable/ic_arrow_back"
+            android:tint="@color/menu_text_secondary" />
+
+        <TextView
+            android:id="@+id/machine_selection_header_title"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="@dimen/machine_card_padding"
+            android:layout_weight="1"
+            android:fontFamily="sans-serif-condensed"
+            android:letterSpacing="0.06"
+            android:text="@string/machine_selection_title"
+            android:textColor="@color/menu_text_secondary"
+            android:textSize="20sp"
+            android:textStyle="bold" />
+
+    </LinearLayout>
+
+    <ScrollView
+        android:id="@+id/machine_selection_scroll"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:clipToPadding="false"
+        android:fillViewport="true"
+        android:overScrollMode="ifContentScrolls"
+        app:layout_constraintBottom_toTopOf="@id/continue_button"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/machine_selection_header">
+
+        <LinearLayout
+            android:id="@+id/machine_card_list"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:clipToPadding="false"
+            android:orientation="vertical"
+            android:paddingTop="@dimen/machine_selection_content_spacing"
+            android:paddingBottom="@dimen/machine_selection_content_spacing">
+
+            <include
+                android:id="@+id/crewzer_card"
+                layout="@layout/item_machine_card"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="@dimen/machine_card_spacing" />
+
+            <include
+                android:id="@+id/bomber_card"
+                layout="@layout/item_machine_card"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="@dimen/machine_card_spacing" />
+
+            <include
+                android:id="@+id/panzer_card"
+                layout="@layout/item_machine_card"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="@dimen/machine_card_spacing" />
+
+            <include
+                android:id="@+id/frigate_card"
+                layout="@layout/item_machine_card"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="@dimen/machine_card_spacing" />
+
+            <include
+                android:id="@+id/lander_card"
+                layout="@layout/item_machine_card"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content" />
+
+        </LinearLayout>
+
+    </ScrollView>
 
     <Button
         android:id="@+id/continue_button"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="@dimen/content_spacing"
-        android:minHeight="@dimen/button_min_height"
-        android:text="@string/action_continue" />
+        android:layout_width="0dp"
+        android:layout_height="@dimen/machine_selection_continue_height"
+        android:background="@drawable/menu_button_primary"
+        android:fontFamily="sans-serif-condensed"
+        android:letterSpacing="0.08"
+        android:stateListAnimator="@null"
+        android:text="@string/action_continue"
+        android:textColor="@color/menu_text_primary"
+        android:textSize="15sp"
+        android:textStyle="bold"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent" />
 
-</LinearLayout>
+</androidx.constraintlayout.widget.ConstraintLayout>

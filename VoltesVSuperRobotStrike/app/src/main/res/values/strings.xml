@@ -11,8 +11,29 @@
     <string name="menu_exit">EXIT</string>
 
     <string name="machine_selection_title">SELECT VOLT MACHINE</string>
-    <string name="machine_selection_placeholder">Screen foundation ready. Full machine selection will be implemented in a later task.</string>
+    <string name="machine_selection_placeholder">Choose your Volt Machine.</string>
     <string name="action_continue">CONTINUE</string>
+    <string name="action_back">Back</string>
+    <string name="action_select">SELECT</string>
+    <string name="action_selected">SELECTED</string>
+    <string name="machine_volt_crewzer">VOLT CREWZER</string>
+    <string name="machine_volt_bomber">VOLT BOMBER</string>
+    <string name="machine_volt_panzer">VOLT PANZER</string>
+    <string name="machine_volt_frigate">VOLT FRIGATE</string>
+    <string name="machine_volt_lander">VOLT LANDER</string>
+    <string name="pilot_steve_armstrong">Pilot: Steve Armstrong</string>
+    <string name="pilot_mark_gordon">Pilot: Mark Gordon</string>
+    <string name="pilot_big_bert_armstrong">Pilot: Big Bert Armstrong</string>
+    <string name="pilot_little_jon_armstrong">Pilot: Little Jon Armstrong</string>
+    <string name="pilot_jamie_robinson">Pilot: Jamie Robinson</string>
+    <string name="machine_stat_speed">SPEED</string>
+    <string name="machine_stat_attack">ATTACK</string>
+    <string name="machine_stat_value">%1$d/5</string>
+    <string name="machine_type_format">TYPE: %1$s</string>
+    <string name="machine_type_fast">FAST</string>
+    <string name="machine_type_balanced">BALANCED</string>
+    <string name="machine_type_power">POWER</string>
+    <string name="machine_type_support">SUPPORT</string>
 
     <string name="difficulty_title">CHOOSE DIFFICULTY</string>
     <string name="difficulty_placeholder">Screen foundation ready. Difficulty behavior will be implemented in a later task.</string>
