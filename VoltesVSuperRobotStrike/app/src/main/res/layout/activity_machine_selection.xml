@@ -30,7 +30,7 @@
             android:contentDescription="@string/action_back"
             android:padding="12dp"
             android:src="@drawable/ic_arrow_back"
-            android:tint="@color/menu_text_secondary" />
+            app:tint="@color/menu_text_secondary" />
 
         <TextView
             android:id="@+id/machine_selection_header_title"

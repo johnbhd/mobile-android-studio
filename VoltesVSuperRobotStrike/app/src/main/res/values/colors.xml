@@ -23,4 +23,7 @@
     <color name="difficulty_easy">#FF65D38A</color>
     <color name="difficulty_normal">#FF5CD6FF</color>
     <color name="difficulty_hard">#FFFF6878</color>
+    <color name="game_background">#FF04152B</color>
+    <color name="game_debug_text">#FFFFFFFF</color>
+    <color name="game_debug_muted">#FFC3D5E8</color>
 </resources>

@@ -58,6 +58,10 @@
     <string name="gameplay_title">GAMEPLAY</string>
     <string name="gameplay_placeholder">Gameplay foundation ready.
 GameView and gameplay systems will be implemented in a later task.</string>
+    <string name="game_foundation_title">VOLTES V - GAME FOUNDATION</string>
+    <string name="game_foundation_machine">Machine: %1$s</string>
+    <string name="game_foundation_difficulty">Difficulty: %1$s</string>
+    <string name="game_foundation_running">GameView Running</string>
 
     <string name="game_over_title">GAME OVER</string>
     <string name="game_over_placeholder">Game-over behavior will be implemented in a later task.</string>
