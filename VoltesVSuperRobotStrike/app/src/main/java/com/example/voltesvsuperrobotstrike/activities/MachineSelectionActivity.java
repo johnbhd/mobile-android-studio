@@ -27,7 +27,6 @@ public class MachineSelectionActivity extends AppCompatActivity {
 
     private final View[] machineCards = new View[5];
     private final Button[] selectButtons = new Button[5];
-    private final TextView[] selectedLabels = new TextView[5];
 
     private String selectedMachineId = MACHINE_CREWZER;
 
@@ -157,7 +156,6 @@ public class MachineSelectionActivity extends AppCompatActivity {
         TextView attackValue = card.findViewById(R.id.attack_value);
         TextView typeValue = card.findViewById(R.id.type_value);
         Button selectButton = card.findViewById(R.id.select_button);
-        TextView selectedLabel = card.findViewById(R.id.selected_label);
 
         card.setTag(machineId);
         machineImage.setImageResource(machineImageResId);
@@ -173,7 +171,6 @@ public class MachineSelectionActivity extends AppCompatActivity {
 
         machineCards[index] = card;
         selectButtons[index] = selectButton;
-        selectedLabels[index] = selectedLabel;
 
         card.setOnClickListener((view) -> {
             selectMachine((String) view.getTag());
@@ -209,9 +206,6 @@ public class MachineSelectionActivity extends AppCompatActivity {
             selectButtons[index].setSelected(isSelected);
             selectButtons[index].setText(
                     isSelected ? R.string.action_selected : R.string.action_select
-            );
-            selectedLabels[index].setVisibility(
-                    isSelected ? View.VISIBLE : View.GONE
             );
         }
     }
