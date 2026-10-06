@@ -19,7 +19,7 @@
     <dimen name="machine_stat_value_width">26dp</dimen>
     <dimen name="machine_stat_segment_height">6dp</dimen>
     <dimen name="machine_stat_segment_spacing">2dp</dimen>
-    <dimen name="machine_select_button_width">86dp</dimen>
-    <dimen name="machine_select_button_height">30dp</dimen>
+    <dimen name="machine_select_button_width">100dp</dimen>
+    <dimen name="machine_select_button_height">32dp</dimen>
     <dimen name="machine_selection_continue_height">52dp</dimen>
 </resources>
