@@ -1,35 +1,396 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
-    android:id="@+id/main"
+    android:id="@+id/difficulty_root"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:gravity="center_horizontal"
-    android:orientation="vertical"
-    android:padding="@dimen/screen_padding"
+    android:background="@color/menu_navy"
+    android:clipToPadding="false"
     tools:context=".activities.DifficultyActivity">
 
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:gravity="center"
-        android:text="@string/difficulty_title"
-        android:textSize="24sp"
-        android:textStyle="bold" />
+    <LinearLayout
+        android:id="@+id/difficulty_header"
+        android:layout_width="0dp"
+        android:layout_height="@dimen/machine_selection_header_height"
+        android:background="@drawable/machine_header_background"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingStart="@dimen/machine_card_padding"
+        android:paddingEnd="@dimen/machine_card_padding"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
 
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="@dimen/content_spacing"
-        android:gravity="center"
-        android:text="@string/difficulty_placeholder" />
+        <ImageButton
+            android:id="@+id/difficulty_back_button"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:background="@android:color/transparent"
+            android:contentDescription="@string/action_back"
+            android:padding="12dp"
+            android:src="@drawable/ic_arrow_back"
+            android:tint="@color/menu_text_secondary" />
+
+        <TextView
+            android:id="@+id/difficulty_header_title"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="@dimen/machine_card_padding"
+            android:layout_weight="1"
+            android:fontFamily="sans-serif-condensed"
+            android:letterSpacing="0.06"
+            android:text="@string/difficulty_title"
+            android:textColor="@color/menu_text_secondary"
+            android:textSize="20sp"
+            android:textStyle="bold" />
+
+    </LinearLayout>
+
+    <androidx.core.widget.NestedScrollView
+        android:id="@+id/difficulty_scroll"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:clipToPadding="false"
+        android:fillViewport="false"
+        android:overScrollMode="ifContentScrolls"
+        android:scrollbars="vertical"
+        app:layout_constraintBottom_toTopOf="@id/start_mission_button"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/difficulty_header">
+
+        <LinearLayout
+            android:id="@+id/difficulty_content"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:clipToPadding="false"
+            android:orientation="vertical"
+            android:paddingTop="@dimen/machine_selection_content_spacing"
+            android:paddingBottom="@dimen/machine_selection_content_spacing">
+
+            <LinearLayout
+                android:id="@+id/selected_machine_summary"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@drawable/machine_card_background"
+                android:gravity="center_vertical"
+                android:minHeight="@dimen/difficulty_summary_min_height"
+                android:orientation="horizontal"
+                android:padding="@dimen/difficulty_card_padding">
+
+                <ImageView
+                    android:id="@+id/selected_machine_image"
+                    android:layout_width="@dimen/difficulty_summary_image_size"
+                    android:layout_height="@dimen/difficulty_summary_image_size"
+                    android:contentDescription="@string/machine_volt_crewzer"
+                    android:scaleType="fitCenter"
+                    android:src="@drawable/volt_crewzer" />
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="@dimen/difficulty_card_content_spacing"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:fontFamily="sans-serif-condensed"
+                        android:text="@string/difficulty_selected_machine"
+                        android:textColor="@color/machine_text_muted"
+                        android:textSize="10sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/selected_machine_name"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:fontFamily="sans-serif-condensed"
+                        android:text="@string/machine_volt_crewzer"
+                        android:textColor="@color/menu_text_secondary"
+                        android:textSize="16sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/selected_machine_pilot"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:fontFamily="sans-serif-condensed"
+                        android:text="@string/pilot_steve_armstrong"
+                        android:textColor="@color/machine_text_muted"
+                        android:textSize="11sp" />
+
+                </LinearLayout>
+            </LinearLayout>
+
+            <androidx.constraintlayout.widget.ConstraintLayout
+                android:id="@+id/easy_card"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/difficulty_card_spacing"
+                android:background="@drawable/machine_card_background"
+                android:clickable="true"
+                android:elevation="2dp"
+                android:focusable="true"
+                android:minHeight="@dimen/difficulty_card_min_height"
+                android:padding="@dimen/difficulty_card_padding">
+
+                <View
+                    android:id="@+id/easy_accent"
+                    android:layout_width="@dimen/difficulty_accent_width"
+                    android:layout_height="0dp"
+                    android:background="@color/difficulty_easy"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="parent" />
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="@dimen/difficulty_card_content_spacing"
+                    android:layout_marginEnd="@dimen/difficulty_card_content_spacing"
+                    android:orientation="vertical"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintEnd_toStartOf="@id/easy_select_button"
+                    app:layout_constraintStart_toEndOf="@id/easy_accent"
+                    app:layout_constraintTop_toTopOf="parent">
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:fontFamily="sans-serif-condensed"
+                        android:text="@string/difficulty_easy"
+                        android:textColor="@color/difficulty_easy"
+                        android:textSize="18sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:fontFamily="sans-serif-condensed"
+                        android:text="@string/difficulty_easy_subtitle"
+                        android:textColor="@color/machine_text_muted"
+                        android:textSize="10sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/difficulty_text_spacing"
+                        android:fontFamily="sans-serif-condensed"
+                        android:text="@string/difficulty_easy_description"
+                        android:textColor="@color/menu_text_secondary"
+                        android:textSize="11sp" />
+
+                </LinearLayout>
+
+                <Button
+                    android:id="@+id/easy_select_button"
+                    android:layout_width="@dimen/machine_select_button_width"
+                    android:layout_height="@dimen/machine_select_button_height"
+                    android:background="@drawable/machine_select_button"
+                    android:fontFamily="sans-serif-condensed"
+                    android:gravity="center"
+                    android:includeFontPadding="false"
+                    android:minHeight="0dp"
+                    android:minWidth="0dp"
+                    android:padding="2dp"
+                    android:stateListAnimator="@null"
+                    android:text="@string/action_select"
+                    android:textColor="@color/machine_select_button_text"
+                    android:textSize="10sp"
+                    android:textStyle="bold"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintTop_toTopOf="parent" />
+
+            </androidx.constraintlayout.widget.ConstraintLayout>
+
+            <androidx.constraintlayout.widget.ConstraintLayout
+                android:id="@+id/normal_card"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/difficulty_card_spacing"
+                android:background="@drawable/machine_card_background"
+                android:clickable="true"
+                android:elevation="2dp"
+                android:focusable="true"
+                android:minHeight="@dimen/difficulty_card_min_height"
+                android:padding="@dimen/difficulty_card_padding">
+
+                <View
+                    android:id="@+id/normal_accent"
+                    android:layout_width="@dimen/difficulty_accent_width"
+                    android:layout_height="0dp"
+                    android:background="@color/difficulty_normal"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="parent" />
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="@dimen/difficulty_card_content_spacing"
+                    android:layout_marginEnd="@dimen/difficulty_card_content_spacing"
+                    android:orientation="vertical"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintEnd_toStartOf="@id/normal_select_button"
+                    app:layout_constraintStart_toEndOf="@id/normal_accent"
+                    app:layout_constraintTop_toTopOf="parent">
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:fontFamily="sans-serif-condensed"
+                        android:text="@string/difficulty_normal"
+                        android:textColor="@color/difficulty_normal"
+                        android:textSize="18sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:fontFamily="sans-serif-condensed"
+                        android:text="@string/difficulty_normal_subtitle"
+                        android:textColor="@color/machine_text_muted"
+                        android:textSize="10sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/difficulty_text_spacing"
+                        android:fontFamily="sans-serif-condensed"
+                        android:text="@string/difficulty_normal_description"
+                        android:textColor="@color/menu_text_secondary"
+                        android:textSize="11sp" />
+
+                </LinearLayout>
+
+                <Button
+                    android:id="@+id/normal_select_button"
+                    android:layout_width="@dimen/machine_select_button_width"
+                    android:layout_height="@dimen/machine_select_button_height"
+                    android:background="@drawable/machine_select_button"
+                    android:fontFamily="sans-serif-condensed"
+                    android:gravity="center"
+                    android:includeFontPadding="false"
+                    android:minHeight="0dp"
+                    android:minWidth="0dp"
+                    android:padding="2dp"
+                    android:stateListAnimator="@null"
+                    android:text="@string/action_select"
+                    android:textColor="@color/machine_select_button_text"
+                    android:textSize="10sp"
+                    android:textStyle="bold"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintTop_toTopOf="parent" />
+
+            </androidx.constraintlayout.widget.ConstraintLayout>
+
+            <androidx.constraintlayout.widget.ConstraintLayout
+                android:id="@+id/hard_card"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/difficulty_card_spacing"
+                android:background="@drawable/machine_card_background"
+                android:clickable="true"
+                android:elevation="2dp"
+                android:focusable="true"
+                android:minHeight="@dimen/difficulty_card_min_height"
+                android:padding="@dimen/difficulty_card_padding">
+
+                <View
+                    android:id="@+id/hard_accent"
+                    android:layout_width="@dimen/difficulty_accent_width"
+                    android:layout_height="0dp"
+                    android:background="@color/difficulty_hard"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="parent" />
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="@dimen/difficulty_card_content_spacing"
+                    android:layout_marginEnd="@dimen/difficulty_card_content_spacing"
+                    android:orientation="vertical"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintEnd_toStartOf="@id/hard_select_button"
+                    app:layout_constraintStart_toEndOf="@id/hard_accent"
+                    app:layout_constraintTop_toTopOf="parent">
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:fontFamily="sans-serif-condensed"
+                        android:text="@string/difficulty_hard"
+                        android:textColor="@color/difficulty_hard"
+                        android:textSize="18sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:fontFamily="sans-serif-condensed"
+                        android:text="@string/difficulty_hard_subtitle"
+                        android:textColor="@color/machine_text_muted"
+                        android:textSize="10sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/difficulty_text_spacing"
+                        android:fontFamily="sans-serif-condensed"
+                        android:text="@string/difficulty_hard_description"
+                        android:textColor="@color/menu_text_secondary"
+                        android:textSize="11sp" />
+
+                </LinearLayout>
+
+                <Button
+                    android:id="@+id/hard_select_button"
+                    android:layout_width="@dimen/machine_select_button_width"
+                    android:layout_height="@dimen/machine_select_button_height"
+                    android:background="@drawable/machine_select_button"
+                    android:fontFamily="sans-serif-condensed"
+                    android:gravity="center"
+                    android:includeFontPadding="false"
+                    android:minHeight="0dp"
+                    android:minWidth="0dp"
+                    android:padding="2dp"
+                    android:stateListAnimator="@null"
+                    android:text="@string/action_select"
+                    android:textColor="@color/machine_select_button_text"
+                    android:textSize="10sp"
+                    android:textStyle="bold"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintTop_toTopOf="parent" />
+
+            </androidx.constraintlayout.widget.ConstraintLayout>
+
+        </LinearLayout>
+    </androidx.core.widget.NestedScrollView>
 
     <Button
         android:id="@+id/start_mission_button"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="@dimen/content_spacing"
-        android:minHeight="@dimen/button_min_height"
-        android:text="@string/action_start_mission" />
+        android:layout_width="0dp"
+        android:layout_height="@dimen/machine_selection_continue_height"
+        android:background="@drawable/menu_button_primary"
+        android:fontFamily="sans-serif-condensed"
+        android:letterSpacing="0.08"
+        android:stateListAnimator="@null"
+        android:text="@string/action_start_mission"
+        android:textColor="@color/menu_text_primary"
+        android:textSize="15sp"
+        android:textStyle="bold"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent" />
 
-</LinearLayout>
+</androidx.constraintlayout.widget.ConstraintLayout>

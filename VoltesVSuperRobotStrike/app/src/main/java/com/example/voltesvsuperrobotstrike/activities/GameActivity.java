@@ -13,11 +13,21 @@ import com.example.voltesvsuperrobotstrike.R;
 
 public class GameActivity extends AppCompatActivity {
 
+    private String selectedMachineId;
+    private String selectedDifficultyId;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_game);
+
+        selectedMachineId = getIntent().getStringExtra(
+                DifficultyActivity.EXTRA_SELECTED_MACHINE
+        );
+        selectedDifficultyId = getIntent().getStringExtra(
+                DifficultyActivity.EXTRA_SELECTED_DIFFICULTY
+        );
 
         applySystemBarInsets();
     }

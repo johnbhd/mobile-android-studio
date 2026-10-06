@@ -35,8 +35,18 @@
     <string name="machine_type_power">POWER</string>
     <string name="machine_type_support">SUPPORT</string>
 
-    <string name="difficulty_title">CHOOSE DIFFICULTY</string>
+    <string name="difficulty_title">SELECT DIFFICULTY</string>
     <string name="difficulty_placeholder">Screen foundation ready. Difficulty behavior will be implemented in a later task.</string>
+    <string name="difficulty_selected_machine">SELECTED MACHINE</string>
+    <string name="difficulty_easy">EASY</string>
+    <string name="difficulty_easy_subtitle">FOR NEW PLAYERS</string>
+    <string name="difficulty_easy_description">Slower enemies • fewer enemy bullets</string>
+    <string name="difficulty_normal">NORMAL</string>
+    <string name="difficulty_normal_subtitle">RECOMMENDED • BALANCED</string>
+    <string name="difficulty_normal_description">Balanced enemy speed and spawn rate</string>
+    <string name="difficulty_hard">HARD</string>
+    <string name="difficulty_hard_subtitle">FOR EXPERIENCED PLAYERS</string>
+    <string name="difficulty_hard_description">Faster enemies • more enemy bullets</string>
     <string name="action_start_mission">START MISSION</string>
 
     <string name="how_to_play_title">HOW TO PLAY</string>

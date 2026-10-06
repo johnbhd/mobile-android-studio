@@ -18,11 +18,11 @@ import com.example.voltesvsuperrobotstrike.R;
 
 public class MachineSelectionActivity extends AppCompatActivity {
 
-    private static final String MACHINE_CREWZER = "volt_crewzer";
-    private static final String MACHINE_BOMBER = "volt_bomber";
-    private static final String MACHINE_PANZER = "volt_panzer";
-    private static final String MACHINE_FRIGATE = "volt_frigate";
-    private static final String MACHINE_LANDER = "volt_lander";
+    static final String MACHINE_CREWZER = "volt_crewzer";
+    static final String MACHINE_BOMBER = "volt_bomber";
+    static final String MACHINE_PANZER = "volt_panzer";
+    static final String MACHINE_FRIGATE = "volt_frigate";
+    static final String MACHINE_LANDER = "volt_lander";
     private static final String STATE_SELECTED_MACHINE = "selected_machine_state";
 
     private final View[] machineCards = new View[5];
