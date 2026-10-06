@@ -1,57 +1,133 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/main"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:gravity="center_horizontal"
-    android:orientation="vertical"
-    android:padding="@dimen/screen_padding"
+    android:background="@color/menu_navy"
     tools:context=".MainActivity">
 
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:gravity="center"
-        android:text="@string/game_title"
-        android:textSize="28sp"
-        android:textStyle="bold" />
+    <ImageView
+        android:id="@+id/main_background"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:clickable="false"
+        android:contentDescription="@null"
+        android:focusable="false"
+        android:importantForAccessibility="no"
+        android:scaleType="centerCrop"
+        android:src="@drawable/starting_screen"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
 
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="@dimen/content_spacing"
-        android:gravity="center"
-        android:text="@string/game_subtitle"
-        android:textSize="18sp" />
+    <View
+        android:id="@+id/main_overlay"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:background="@drawable/menu_overlay_gradient"
+        android:importantForAccessibility="no"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
 
-    <Button
-        android:id="@+id/start_game_button"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="@dimen/content_spacing"
-        android:minHeight="@dimen/button_min_height"
-        android:text="@string/menu_start_game" />
+    <FrameLayout
+        android:id="@+id/main_safe_area"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:clipToPadding="false"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
 
-    <Button
-        android:id="@+id/how_to_play_button"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:minHeight="@dimen/button_min_height"
-        android:text="@string/menu_how_to_play" />
+        <LinearLayout
+            android:id="@+id/main_menu_panel"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="bottom"
+            android:background="@drawable/menu_panel_background"
+            android:clipToPadding="false"
+            android:orientation="vertical"
+            android:padding="@dimen/main_menu_panel_padding">
 
-    <Button
-        android:id="@+id/high_score_button"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:minHeight="@dimen/button_min_height"
-        android:text="@string/menu_high_score" />
+            <Button
+                android:id="@+id/start_game_button"
+                android:layout_width="match_parent"
+                android:layout_height="@dimen/main_menu_button_height"
+                android:background="@drawable/menu_button_primary"
+                android:fontFamily="sans-serif-condensed"
+                android:gravity="center"
+                android:letterSpacing="0.08"
+                android:minHeight="@dimen/main_menu_button_height"
+                android:paddingStart="12dp"
+                android:paddingEnd="12dp"
+                android:stateListAnimator="@null"
+                android:text="@string/menu_start_game"
+                android:textColor="@color/menu_text_primary"
+                android:textSize="15sp"
+                android:textStyle="bold" />
 
-    <Button
-        android:id="@+id/exit_button"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:minHeight="@dimen/button_min_height"
-        android:text="@string/menu_exit" />
+            <Button
+                android:id="@+id/how_to_play_button"
+                android:layout_width="match_parent"
+                android:layout_height="@dimen/main_menu_button_height"
+                android:layout_marginTop="@dimen/main_menu_button_spacing"
+                android:background="@drawable/menu_button_secondary"
+                android:fontFamily="sans-serif-condensed"
+                android:gravity="center"
+                android:letterSpacing="0.08"
+                android:minHeight="@dimen/main_menu_button_height"
+                android:paddingStart="12dp"
+                android:paddingEnd="12dp"
+                android:stateListAnimator="@null"
+                android:text="@string/menu_how_to_play"
+                android:textColor="@color/menu_text_secondary"
+                android:textSize="15sp"
+                android:textStyle="bold" />
 
-</LinearLayout>
+            <Button
+                android:id="@+id/high_score_button"
+                android:layout_width="match_parent"
+                android:layout_height="@dimen/main_menu_button_height"
+                android:layout_marginTop="@dimen/main_menu_button_spacing"
+                android:background="@drawable/menu_button_secondary"
+                android:fontFamily="sans-serif-condensed"
+                android:gravity="center"
+                android:letterSpacing="0.08"
+                android:minHeight="@dimen/main_menu_button_height"
+                android:paddingStart="12dp"
+                android:paddingEnd="12dp"
+                android:stateListAnimator="@null"
+                android:text="@string/menu_high_score"
+                android:textColor="@color/menu_text_secondary"
+                android:textSize="15sp"
+                android:textStyle="bold" />
+
+            <Button
+                android:id="@+id/exit_button"
+                android:layout_width="match_parent"
+                android:layout_height="@dimen/main_menu_button_height"
+                android:layout_marginTop="@dimen/main_menu_button_spacing"
+                android:alpha="0.86"
+                android:background="@drawable/menu_button_secondary"
+                android:fontFamily="sans-serif-condensed"
+                android:gravity="center"
+                android:letterSpacing="0.08"
+                android:minHeight="@dimen/main_menu_button_height"
+                android:paddingStart="12dp"
+                android:paddingEnd="12dp"
+                android:stateListAnimator="@null"
+                android:text="@string/menu_exit"
+                android:textColor="@color/menu_text_secondary"
+                android:textSize="15sp"
+                android:textStyle="bold" />
+
+        </LinearLayout>
+
+    </FrameLayout>
+
+</androidx.constraintlayout.widget.ConstraintLayout>

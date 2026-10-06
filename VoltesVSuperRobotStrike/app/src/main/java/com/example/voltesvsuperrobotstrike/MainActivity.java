@@ -28,13 +28,13 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void applySystemBarInsets() {
-        View rootView = findViewById(R.id.main);
+        View safeAreaView = findViewById(R.id.main_safe_area);
 
-        ViewCompat.setOnApplyWindowInsetsListener(rootView, (v, insets) -> {
+        ViewCompat.setOnApplyWindowInsetsListener(safeAreaView, (view, insets) -> {
             Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
             int basePadding = getResources().getDimensionPixelSize(R.dimen.screen_padding);
 
-            v.setPadding(
+            view.setPadding(
                     basePadding + systemBars.left,
                     basePadding + systemBars.top,
                     basePadding + systemBars.right,
