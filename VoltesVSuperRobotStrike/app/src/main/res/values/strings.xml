@@ -1,3 +1,31 @@
 <resources>
-    <string name="app_name">VoltesVSuperRobotStrike</string>
+    <string name="app_name">Voltes V: Super Robot Strike</string>
+    <string name="game_title">VOLTES V</string>
+    <string name="game_subtitle">SUPER ROBOT STRIKE</string>
+
+    <string name="menu_start_game">START GAME</string>
+    <string name="menu_how_to_play">HOW TO PLAY</string>
+    <string name="menu_high_score">HIGH SCORE</string>
+    <string name="menu_exit">EXIT</string>
+
+    <string name="machine_selection_title">SELECT VOLT MACHINE</string>
+    <string name="machine_selection_placeholder">Screen foundation ready. Full machine selection will be implemented in a later task.</string>
+    <string name="action_continue">CONTINUE</string>
+
+    <string name="difficulty_title">CHOOSE DIFFICULTY</string>
+    <string name="difficulty_placeholder">Screen foundation ready. Difficulty behavior will be implemented in a later task.</string>
+    <string name="action_start_mission">START MISSION</string>
+
+    <string name="how_to_play_title">HOW TO PLAY</string>
+    <string name="how_to_play_placeholder">Instructions will be implemented in a later task.</string>
+
+    <string name="high_score_title">HIGH SCORE</string>
+    <string name="high_score_placeholder">High-score persistence will be implemented in a later task.</string>
+
+    <string name="gameplay_title">GAMEPLAY</string>
+    <string name="gameplay_placeholder">Gameplay foundation ready.
+GameView and gameplay systems will be implemented in a later task.</string>
+
+    <string name="game_over_title">GAME OVER</string>
+    <string name="game_over_placeholder">Game-over behavior will be implemented in a later task.</string>
 </resources>
