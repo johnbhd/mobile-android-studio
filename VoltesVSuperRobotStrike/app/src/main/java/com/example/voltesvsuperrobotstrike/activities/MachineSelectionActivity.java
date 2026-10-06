@@ -166,7 +166,7 @@ public class MachineSelectionActivity extends AppCompatActivity {
         pilotName.setText(pilotNameResId);
         speedValue.setText(getString(R.string.machine_stat_value, speed));
         attackValue.setText(getString(R.string.machine_stat_value, attack));
-        typeValue.setText(getString(R.string.machine_type_format, getString(typeResId)));
+        typeValue.setText(typeResId);
 
         configureStatBar(card.findViewById(R.id.speed_stat_bar), speed);
         configureStatBar(card.findViewById(R.id.attack_stat_bar), attack);

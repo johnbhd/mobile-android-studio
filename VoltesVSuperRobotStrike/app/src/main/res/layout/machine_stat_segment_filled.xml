@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<View xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="0dp"
+    android:layout_height="@dimen/machine_stat_segment_height"
+    android:layout_marginStart="@dimen/machine_stat_segment_spacing"
+    android:layout_weight="1"
+    android:background="@drawable/machine_stat_segment_filled" />

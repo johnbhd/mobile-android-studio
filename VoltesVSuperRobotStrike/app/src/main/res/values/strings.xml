@@ -28,8 +28,8 @@
     <string name="pilot_jamie_robinson">Pilot: Jamie Robinson</string>
     <string name="machine_stat_speed">SPEED</string>
     <string name="machine_stat_attack">ATTACK</string>
+    <string name="machine_type_label">TYPE:</string>
     <string name="machine_stat_value">%1$d/5</string>
-    <string name="machine_type_format">TYPE: %1$s</string>
     <string name="machine_type_fast">FAST</string>
     <string name="machine_type_balanced">BALANCED</string>
     <string name="machine_type_power">POWER</string>
