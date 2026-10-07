@@ -6,6 +6,7 @@ import android.animation.AnimatorListenerAdapter;
 import android.animation.ValueAnimator;
 import android.os.Bundle;
 import android.view.View;
+import android.view.animation.LinearInterpolator;
 import android.widget.ProgressBar;
 
 import androidx.activity.EdgeToEdge;
@@ -19,7 +20,7 @@ import com.example.voltesvsuperrobotstrike.R;
 
 public class SplashActivity extends AppCompatActivity {
 
-    private static final long SPLASH_DURATION_MS = 1500L;
+    private static final long SPLASH_DURATION_MS = 3000L;
 
     private ValueAnimator splashProgressAnimator;
     private boolean hasOpenedMainMenu;
@@ -37,10 +38,11 @@ public class SplashActivity extends AppCompatActivity {
     private void startSplashProgress() {
         ProgressBar progressBar = findViewById(R.id.splash_loading_indicator);
         progressBar.setMax(100);
-        progressBar.setProgress(0);
+        progressBar.setProgress(1);
 
-        splashProgressAnimator = ValueAnimator.ofInt(0, 100);
+        splashProgressAnimator = ValueAnimator.ofInt(1, 100);
         splashProgressAnimator.setDuration(SPLASH_DURATION_MS);
+        splashProgressAnimator.setInterpolator(new LinearInterpolator());
         splashProgressAnimator.addUpdateListener((animator) -> {
             progressBar.setProgress((Integer) animator.getAnimatedValue());
         });
