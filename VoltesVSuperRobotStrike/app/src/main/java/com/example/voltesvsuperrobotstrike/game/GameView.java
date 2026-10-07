@@ -5,10 +5,14 @@ import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.Typeface;
 import android.util.AttributeSet;
+import android.view.MotionEvent;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 
 import androidx.core.content.ContextCompat;
+import androidx.core.graphics.Insets;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowInsetsCompat;
 
 import com.example.voltesvsuperrobotstrike.R;
 
@@ -26,14 +30,19 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
     private final float density;
     private final int backgroundColor;
     private final ScrollingBackground scrollingBackground;
+    private volatile Player player;
 
     private volatile boolean running;
     private volatile boolean surfaceReady;
     private volatile boolean activityResumed;
     private volatile int screenWidth;
     private volatile int screenHeight;
+    private volatile int bottomSystemInsetPixels;
 
     private Thread gameThread;
+    private int activePointerId = MotionEvent.INVALID_POINTER_ID;
+    private float dragStartTouchX;
+    private float dragStartPlayerCenterX;
 
     private String selectedMachineId = "volt_crewzer";
     private String selectedDifficultyId = "normal";
@@ -58,12 +67,15 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
         density = getResources().getDisplayMetrics().density;
         backgroundColor = ContextCompat.getColor(context, R.color.game_background);
         scrollingBackground = new ScrollingBackground(context);
+        player = new Player(getResources(), R.drawable.volt_crewzer, density);
 
         initializePaints();
         foundationTitle = getResources().getString(R.string.game_foundation_title);
         runningLine = getResources().getString(R.string.game_foundation_running);
         updateDiagnosticLines();
         setFocusable(true);
+        setClickable(true);
+        initializeSystemBarInsets();
     }
 
     private void initializePaints() {
@@ -94,8 +106,34 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
     }
 
     public void configureGame(String selectedMachine, String selectedDifficulty) {
-        selectedMachineId = selectedMachine == null ? "volt_crewzer" : selectedMachine;
+        selectedMachineId = isSupportedMachineId(selectedMachine)
+                ? selectedMachine
+                : "volt_crewzer";
         selectedDifficultyId = selectedDifficulty == null ? "normal" : selectedDifficulty;
+
+        int drawableResourceId = getMachineDrawableResource(selectedMachineId);
+        Player currentPlayer = player;
+
+        if (currentPlayer == null
+                || currentPlayer.getDrawableResourceId() != drawableResourceId) {
+            Player replacementPlayer = new Player(
+                    getResources(),
+                    drawableResourceId,
+                    density
+            );
+            replacementPlayer.setBottomSystemInsetPixels(bottomSystemInsetPixels);
+
+            if (screenWidth > 0 && screenHeight > 0) {
+                replacementPlayer.prepare(screenWidth, screenHeight);
+            }
+
+            player = replacementPlayer;
+
+            if (currentPlayer != null) {
+                currentPlayer.release();
+            }
+        }
+
         updateDiagnosticLines();
     }
 
@@ -110,7 +148,13 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
     }
 
     public void releaseGame() {
+        pauseGame();
         scrollingBackground.release();
+
+        Player currentPlayer = player;
+        if (currentPlayer != null) {
+            currentPlayer.release();
+        }
     }
 
     @Override
@@ -142,6 +186,12 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
 
         if (width > 0 && height > 0) {
             scrollingBackground.prepare(width, height);
+
+            Player currentPlayer = player;
+            if (currentPlayer != null) {
+                currentPlayer.setBottomSystemInsetPixels(bottomSystemInsetPixels);
+                currentPlayer.prepare(width, height);
+            }
         }
     }
 
@@ -224,6 +274,11 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
 
     private void update(float deltaSeconds) {
         scrollingBackground.update(deltaSeconds);
+
+        Player currentPlayer = player;
+        if (currentPlayer != null) {
+            currentPlayer.update();
+        }
     }
 
     private void render() {
@@ -245,6 +300,11 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
             canvas.drawColor(backgroundColor);
 
             scrollingBackground.draw(canvas);
+
+            Player currentPlayer = player;
+            if (currentPlayer != null) {
+                currentPlayer.draw(canvas);
+            }
 
             int width = screenWidth > 0 ? screenWidth : canvas.getWidth();
             int height = screenHeight > 0 ? screenHeight : canvas.getHeight();
@@ -276,6 +336,95 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
         canvas.drawText(machineLine, centerX, firstLineY + lineSpacing * 2f, infoPaint);
         canvas.drawText(difficultyLine, centerX, firstLineY + lineSpacing * 3f, infoPaint);
         canvas.drawText(runningLine, centerX, firstLineY + lineSpacing * 5f, infoPaint);
+    }
+
+    @Override
+    public boolean onTouchEvent(MotionEvent event) {
+        if (!running || !surfaceReady) {
+            resetTouchState();
+            return false;
+        }
+
+        Player currentPlayer = player;
+        if (currentPlayer == null || !currentPlayer.isPrepared()) {
+            resetTouchState();
+            return false;
+        }
+
+        int action = event.getActionMasked();
+
+        switch (action) {
+            case MotionEvent.ACTION_DOWN:
+                activePointerId = event.getPointerId(0);
+                dragStartTouchX = event.getX();
+                dragStartPlayerCenterX = currentPlayer.getCenterX();
+                return true;
+
+            case MotionEvent.ACTION_MOVE:
+                if (activePointerId == MotionEvent.INVALID_POINTER_ID) {
+                    return false;
+                }
+
+                int pointerIndex = event.findPointerIndex(activePointerId);
+                if (pointerIndex < 0) {
+                    resetTouchState();
+                    return false;
+                }
+
+                float dragDeltaX = event.getX(pointerIndex) - dragStartTouchX;
+                currentPlayer.setTargetCenterX(dragStartPlayerCenterX + dragDeltaX);
+                return true;
+
+            case MotionEvent.ACTION_POINTER_DOWN:
+                return activePointerId != MotionEvent.INVALID_POINTER_ID;
+
+            case MotionEvent.ACTION_POINTER_UP:
+                if (event.getPointerId(event.getActionIndex()) == activePointerId) {
+                    resetTouchState();
+                }
+                return true;
+
+            case MotionEvent.ACTION_UP:
+                boolean handledUp = activePointerId != MotionEvent.INVALID_POINTER_ID;
+                resetTouchState();
+                if (handledUp) {
+                    performClick();
+                }
+                return handledUp;
+
+            case MotionEvent.ACTION_CANCEL:
+                resetTouchState();
+                return true;
+
+            default:
+                return activePointerId != MotionEvent.INVALID_POINTER_ID;
+        }
+    }
+
+    @Override
+    public boolean performClick() {
+        return super.performClick();
+    }
+
+    private void initializeSystemBarInsets() {
+        ViewCompat.setOnApplyWindowInsetsListener(this, (view, insets) -> {
+            Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
+            bottomSystemInsetPixels = systemBars.bottom;
+
+            Player currentPlayer = player;
+            if (currentPlayer != null) {
+                currentPlayer.setBottomSystemInsetPixels(bottomSystemInsetPixels);
+            }
+
+            return insets;
+        });
+        ViewCompat.requestApplyInsets(this);
+    }
+
+    private void resetTouchState() {
+        activePointerId = MotionEvent.INVALID_POINTER_ID;
+        dragStartTouchX = 0f;
+        dragStartPlayerCenterX = 0f;
     }
 
     private boolean paceFrame(long frameStartTime) {
@@ -327,6 +476,30 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
             default:
                 return "VOLT CREWZER";
         }
+    }
+
+    private int getMachineDrawableResource(String machineId) {
+        switch (machineId) {
+            case "volt_bomber":
+                return R.drawable.volt_bomber;
+            case "volt_panzer":
+                return R.drawable.volt_panzer;
+            case "volt_frigate":
+                return R.drawable.volt_frigate;
+            case "volt_lander":
+                return R.drawable.volt_lander;
+            case "volt_crewzer":
+            default:
+                return R.drawable.volt_crewzer;
+        }
+    }
+
+    private boolean isSupportedMachineId(String machineId) {
+        return "volt_crewzer".equals(machineId)
+                || "volt_bomber".equals(machineId)
+                || "volt_panzer".equals(machineId)
+                || "volt_frigate".equals(machineId)
+                || "volt_lander".equals(machineId);
     }
 
     private String getDifficultyDisplayName(String difficultyId) {
