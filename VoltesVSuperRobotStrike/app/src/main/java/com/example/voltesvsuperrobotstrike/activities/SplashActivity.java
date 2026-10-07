@@ -89,6 +89,7 @@ public class SplashActivity extends AppCompatActivity {
                 SplashActivity.this,
                 MainActivity.class
         );
+        intent.putExtra(MainActivity.EXTRA_SPLASH_COMPLETE, true);
 
         startActivity(intent);
         finish();

@@ -14,12 +14,23 @@ import com.example.voltesvsuperrobotstrike.activities.DifficultyActivity;
 import com.example.voltesvsuperrobotstrike.activities.HighScoreActivity;
 import com.example.voltesvsuperrobotstrike.activities.HowToPlayActivity;
 import com.example.voltesvsuperrobotstrike.activities.MachineSelectionActivity;
+import com.example.voltesvsuperrobotstrike.activities.SplashActivity;
 
 public class MainActivity extends AppCompatActivity {
+
+    public static final String EXTRA_SPLASH_COMPLETE =
+            "com.example.voltesvsuperrobotstrike.extra.SPLASH_COMPLETE";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        if (!getIntent().getBooleanExtra(EXTRA_SPLASH_COMPLETE, false)) {
+            startActivity(new Intent(this, SplashActivity.class));
+            finish();
+            return;
+        }
+
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_main);
 
