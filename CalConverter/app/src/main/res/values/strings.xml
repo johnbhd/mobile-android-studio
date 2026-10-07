@@ -1,3 +1,57 @@
 <resources>
     <string name="app_name">CalConverter</string>
+    <string name="app_title">MultiTool</string>
+
+    <string name="tab_calculator">Calculator</string>
+    <string name="tab_length">Length</string>
+    <string name="tab_weight">Weight</string>
+    <string name="tab_temperature">Temperature</string>
+
+    <string name="title_length_converter">Length Converter</string>
+    <string name="subtitle_length_converter">Convert between different length units.</string>
+    <string name="title_weight_converter">Weight Converter</string>
+    <string name="subtitle_weight_converter">Convert between different weight units.</string>
+    <string name="title_temperature_converter">Temperature Converter</string>
+    <string name="subtitle_temperature_converter">Convert between different temperature units.</string>
+
+    <string name="label_from">From</string>
+    <string name="label_to">To</string>
+    <string name="hint_enter_value">Enter value</string>
+    <string name="hint_result">Result</string>
+    <string name="btn_convert">Convert</string>
+    <string name="content_description_swap">Swap units</string>
+
+    <string-array name="length_units">
+        <item>Meters (m)</item>
+        <item>Kilometers (km)</item>
+        <item>Centimeters (cm)</item>
+        <item>Millimeters (mm)</item>
+        <item>Miles (mi)</item>
+        <item>Yards (yd)</item>
+        <item>Feet (ft)</item>
+        <item>Inches (in)</item>
+    </string-array>
+
+    <string name="unit_kilograms">Kilograms (kg)</string>
+    <string name="unit_grams">Grams (g)</string>
+    <string name="unit_pounds">Pounds (lb)</string>
+    <string name="unit_ounces">Ounces (oz)</string>
+    <string-array name="weight_units">
+        <item>@string/unit_kilograms</item>
+        <item>@string/unit_grams</item>
+        <item>@string/unit_pounds</item>
+        <item>@string/unit_ounces</item>
+    </string-array>
+
+    <string name="unit_celsius">Celsius (&#176;C)</string>
+    <string name="unit_fahrenheit">Fahrenheit (&#176;F)</string>
+    <string name="unit_kelvin">Kelvin (K)</string>
+    <string-array name="temperature_units">
+        <item>@string/unit_celsius</item>
+        <item>@string/unit_fahrenheit</item>
+        <item>@string/unit_kelvin</item>
+    </string-array>
+
+    <string name="error_invalid_number">Invalid number</string>
+    <string name="error_below_absolute_zero">Below absolute zero</string>
 </resources>
