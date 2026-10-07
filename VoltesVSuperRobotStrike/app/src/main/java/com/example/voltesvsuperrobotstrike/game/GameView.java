@@ -1,6 +1,8 @@
 package com.example.voltesvsuperrobotstrike.game;
 
 import android.content.Context;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.Typeface;
@@ -16,9 +18,14 @@ import androidx.core.view.WindowInsetsCompat;
 
 import com.example.voltesvsuperrobotstrike.R;
 
+import java.util.ArrayList;
+
 public class GameView extends SurfaceView implements SurfaceHolder.Callback, Runnable {
 
     private static final float MAX_DELTA_SECONDS = 0.1f;
+    private static final float AUTO_FIRE_INTERVAL_SECONDS = 0.35f;
+    private static final float PLAYER_BULLET_SPEED_DP_PER_SECOND = 700f;
+    private static final float BULLET_PLAYER_OVERLAP_DP = 2f;
     private static final long TARGET_FRAME_DURATION_NANOS = 1_000_000_000L / 60L;
     private static final long THREAD_JOIN_TIMEOUT_MILLIS = 500L;
 
@@ -26,9 +33,15 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
     private final Object gameThreadLock = new Object();
     private final Paint infoPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint diagnosticPanelPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Paint projectilePaint = new Paint(
+            Paint.ANTI_ALIAS_FLAG | Paint.FILTER_BITMAP_FLAG
+    );
     private final float density;
+    private final float playerBulletSpeedPixelsPerSecond;
+    private final float bulletPlayerOverlapPixels;
     private final int backgroundColor;
     private final ScrollingBackground scrollingBackground;
+    private final ArrayList<Bullet> playerBullets = new ArrayList<>();
     private volatile Player player;
 
     private volatile boolean running;
@@ -45,6 +58,10 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
     private float dragStartTouchY;
     private float dragStartPlayerCenterX;
     private float dragStartPlayerCenterY;
+
+    private Bitmap projectileBitmap;
+    private int preparedProjectileResourceId;
+    private float fireCooldownSeconds = AUTO_FIRE_INTERVAL_SECONDS;
 
     private String selectedMachineId = "volt_crewzer";
     private String selectedDifficultyId = "normal";
@@ -64,6 +81,8 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
         surfaceHolder = getHolder();
         surfaceHolder.addCallback(this);
         density = getResources().getDisplayMetrics().density;
+        playerBulletSpeedPixelsPerSecond = PLAYER_BULLET_SPEED_DP_PER_SECOND * density;
+        bulletPlayerOverlapPixels = BULLET_PLAYER_OVERLAP_DP * density;
         backgroundColor = ContextCompat.getColor(context, R.color.game_background);
         scrollingBackground = new ScrollingBackground(context);
         player = new Player(getResources(), R.drawable.volt_crewzer, density);
@@ -99,6 +118,10 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
                 : "volt_crewzer";
         selectedDifficultyId = selectedDifficulty == null ? "normal" : selectedDifficulty;
 
+        playerBullets.clear();
+        fireCooldownSeconds = AUTO_FIRE_INTERVAL_SECONDS;
+        releaseProjectileBitmap();
+
         int drawableResourceId = getMachineDrawableResource(selectedMachineId);
         Player currentPlayer = player;
 
@@ -122,6 +145,8 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
             }
         }
 
+        prepareProjectileBitmapIfReady();
+
         updateDiagnosticLines();
     }
 
@@ -138,6 +163,8 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
     public void releaseGame() {
         pauseGame();
         scrollingBackground.release();
+        playerBullets.clear();
+        releaseProjectileBitmap();
 
         Player currentPlayer = player;
         if (currentPlayer != null) {
@@ -169,6 +196,13 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
     }
 
     private void updateSurfaceDimensions(int width, int height) {
+        boolean dimensionsChanged = screenWidth != width || screenHeight != height;
+        boolean restartGameThread = running;
+
+        if (restartGameThread) {
+            stopGameThread();
+        }
+
         screenWidth = width;
         screenHeight = height;
 
@@ -180,6 +214,17 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
                 currentPlayer.setBottomSystemInsetPixels(bottomSystemInsetPixels);
                 currentPlayer.prepare(width, height);
             }
+
+            if (dimensionsChanged) {
+                playerBullets.clear();
+                fireCooldownSeconds = AUTO_FIRE_INTERVAL_SECONDS;
+            }
+
+            prepareProjectileBitmapIfReady();
+        }
+
+        if (restartGameThread) {
+            startGameThreadIfReady();
         }
     }
 
@@ -267,6 +312,9 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
         if (currentPlayer != null) {
             currentPlayer.update();
         }
+
+        updateAutomaticFire(deltaSeconds);
+        updatePlayerBullets(deltaSeconds);
     }
 
     private void render() {
@@ -288,6 +336,8 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
             canvas.drawColor(backgroundColor);
 
             scrollingBackground.draw(canvas);
+
+            drawPlayerBullets(canvas);
 
             Player currentPlayer = player;
             if (currentPlayer != null) {
@@ -367,6 +417,125 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
                 diagnosticPanelPaint
         );
         canvas.drawText(diagnosticLine, textLeft, textBaseline, infoPaint);
+    }
+
+    private void drawPlayerBullets(Canvas canvas) {
+        for (Bullet bullet : playerBullets) {
+            bullet.draw(canvas, projectilePaint);
+        }
+    }
+
+    private void updateAutomaticFire(float deltaSeconds) {
+        Player currentPlayer = player;
+        if (currentPlayer == null
+                || !currentPlayer.isPrepared()
+                || projectileBitmap == null) {
+            return;
+        }
+
+        fireCooldownSeconds -= deltaSeconds;
+        if (fireCooldownSeconds > 0f) {
+            return;
+        }
+
+        firePlayerProjectile();
+        fireCooldownSeconds = AUTO_FIRE_INTERVAL_SECONDS;
+    }
+
+    private void firePlayerProjectile() {
+        Player currentPlayer = player;
+        if (currentPlayer == null || projectileBitmap == null) {
+            return;
+        }
+
+        float playerCenterX = currentPlayer.getCenterX();
+        float playerTop = currentPlayer.getCenterY() - currentPlayer.getHeight() / 2f;
+        spawnBullet(playerCenterX, playerTop);
+    }
+
+    private void spawnBullet(float centerX, float playerTop) {
+        float bulletX = centerX - projectileBitmap.getWidth() / 2f;
+        float bulletY = playerTop - projectileBitmap.getHeight() + bulletPlayerOverlapPixels;
+
+        playerBullets.add(new Bullet(
+                projectileBitmap,
+                bulletX,
+                bulletY,
+                playerBulletSpeedPixelsPerSecond
+        ));
+    }
+
+    private void updatePlayerBullets(float deltaSeconds) {
+        for (int index = playerBullets.size() - 1; index >= 0; index--) {
+            Bullet bullet = playerBullets.get(index);
+            bullet.update(deltaSeconds);
+
+            if (bullet.isOffScreen()) {
+                playerBullets.remove(index);
+            }
+        }
+    }
+
+    private void prepareProjectileBitmapIfReady() {
+        Player currentPlayer = player;
+        if (currentPlayer == null
+                || !currentPlayer.isPrepared()
+                || screenWidth <= 0
+                || screenHeight <= 0) {
+            return;
+        }
+
+        int projectileResourceId = getProjectileDrawableResource(selectedMachineId);
+        int targetWidth = Math.max(
+                1,
+                Math.round(currentPlayer.getWidth() * getProjectileWidthRatio(selectedMachineId))
+        );
+
+        if (projectileBitmap != null
+                && preparedProjectileResourceId == projectileResourceId
+                && projectileBitmap.getWidth() == targetWidth) {
+            return;
+        }
+
+        releaseProjectileBitmap();
+
+        Bitmap sourceBitmap = BitmapFactory.decodeResource(
+                getResources(),
+                projectileResourceId
+        );
+        if (sourceBitmap == null
+                || sourceBitmap.getWidth() <= 0
+                || sourceBitmap.getHeight() <= 0) {
+            preparedProjectileResourceId = 0;
+            return;
+        }
+
+        int targetHeight = Math.max(
+                1,
+                Math.round(sourceBitmap.getHeight()
+                        * (targetWidth / (float) sourceBitmap.getWidth()))
+        );
+        Bitmap scaledBitmap = Bitmap.createScaledBitmap(
+                sourceBitmap,
+                targetWidth,
+                targetHeight,
+                true
+        );
+
+        if (scaledBitmap != sourceBitmap) {
+            sourceBitmap.recycle();
+        }
+
+        projectileBitmap = scaledBitmap;
+        preparedProjectileResourceId = projectileResourceId;
+    }
+
+    private void releaseProjectileBitmap() {
+        if (projectileBitmap != null && !projectileBitmap.isRecycled()) {
+            projectileBitmap.recycle();
+        }
+        projectileBitmap = null;
+        preparedProjectileResourceId = 0;
     }
 
     private boolean rectanglesOverlap(
@@ -540,6 +709,38 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
             case "volt_crewzer":
             default:
                 return R.drawable.volt_crewzer;
+        }
+    }
+
+    private int getProjectileDrawableResource(String machineId) {
+        switch (machineId) {
+            case "volt_bomber":
+                return R.drawable.bullet_bomber;
+            case "volt_panzer":
+                return R.drawable.bullet_panzer;
+            case "volt_frigate":
+                return R.drawable.bullet_frigate;
+            case "volt_lander":
+                return R.drawable.bullet_lander;
+            case "volt_crewzer":
+            default:
+                return R.drawable.bullet_crewzer;
+        }
+    }
+
+    private float getProjectileWidthRatio(String machineId) {
+        switch (machineId) {
+            case "volt_bomber":
+                return 0.82f;
+            case "volt_panzer":
+                return 0.78f;
+            case "volt_frigate":
+                return 0.90f;
+            case "volt_lander":
+                return 0.66f;
+            case "volt_crewzer":
+            default:
+                return 0.95f;
         }
     }
 
