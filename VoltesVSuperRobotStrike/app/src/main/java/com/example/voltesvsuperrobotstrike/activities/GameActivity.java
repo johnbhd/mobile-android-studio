@@ -61,6 +61,15 @@ public class GameActivity extends AppCompatActivity {
         super.onPause();
     }
 
+    @Override
+    protected void onDestroy() {
+        if (gameView != null) {
+            gameView.releaseGame();
+        }
+
+        super.onDestroy();
+    }
+
     private boolean isValidMachineId(String machineId) {
         return MachineSelectionActivity.MACHINE_CREWZER.equals(machineId)
                 || MachineSelectionActivity.MACHINE_BOMBER.equals(machineId)

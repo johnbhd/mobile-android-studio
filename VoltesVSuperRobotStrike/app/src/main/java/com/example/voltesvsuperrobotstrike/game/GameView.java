@@ -22,8 +22,10 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
     private final Object gameThreadLock = new Object();
     private final Paint titlePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint infoPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Paint diagnosticPanelPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final float density;
     private final int backgroundColor;
+    private final ScrollingBackground scrollingBackground;
 
     private volatile boolean running;
     private volatile boolean surfaceReady;
@@ -55,6 +57,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
         surfaceHolder.addCallback(this);
         density = getResources().getDisplayMetrics().density;
         backgroundColor = ContextCompat.getColor(context, R.color.game_background);
+        scrollingBackground = new ScrollingBackground(context);
 
         initializePaints();
         foundationTitle = getResources().getString(R.string.game_foundation_title);
@@ -72,6 +75,10 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
                 getContext(),
                 R.color.game_debug_muted
         );
+        int diagnosticPanelColor = ContextCompat.getColor(
+                getContext(),
+                R.color.game_debug_panel
+        );
 
         titlePaint.setColor(debugTextColor);
         titlePaint.setTextSize(20f * density);
@@ -82,6 +89,8 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
         infoPaint.setTextSize(14f * density);
         infoPaint.setTextAlign(Paint.Align.CENTER);
         infoPaint.setTypeface(Typeface.create("sans-serif-condensed", Typeface.NORMAL));
+
+        diagnosticPanelPaint.setColor(diagnosticPanelColor);
     }
 
     public void configureGame(String selectedMachine, String selectedDifficulty) {
@@ -98,6 +107,10 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
     public void pauseGame() {
         activityResumed = false;
         stopGameThread();
+    }
+
+    public void releaseGame() {
+        scrollingBackground.release();
     }
 
     @Override
@@ -126,6 +139,10 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
     private void updateSurfaceDimensions(int width, int height) {
         screenWidth = width;
         screenHeight = height;
+
+        if (width > 0 && height > 0) {
+            scrollingBackground.prepare(width, height);
+        }
     }
 
     private void startGameThreadIfReady() {
@@ -206,7 +223,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
     }
 
     private void update(float deltaSeconds) {
-        // Future gameplay state updates will run here using deltaSeconds.
+        scrollingBackground.update(deltaSeconds);
     }
 
     private void render() {
@@ -227,36 +244,38 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
             canvasLocked = true;
             canvas.drawColor(backgroundColor);
 
+            scrollingBackground.draw(canvas);
+
             int width = screenWidth > 0 ? screenWidth : canvas.getWidth();
             int height = screenHeight > 0 ? screenHeight : canvas.getHeight();
-            float centerX = width / 2f;
-            float firstLineY = Math.max(48f * density, height * 0.3f);
-            float lineSpacing = 28f * density;
-
-            canvas.drawText(
-                    foundationTitle,
-                    centerX,
-                    firstLineY,
-                    titlePaint
-            );
-            canvas.drawText(machineLine, centerX, firstLineY + lineSpacing * 2f, infoPaint);
-            canvas.drawText(
-                    difficultyLine,
-                    centerX,
-                    firstLineY + lineSpacing * 3f,
-                    infoPaint
-            );
-            canvas.drawText(
-                    runningLine,
-                    centerX,
-                    firstLineY + lineSpacing * 5f,
-                    infoPaint
-            );
+            drawDiagnostics(canvas, width, height);
         } finally {
             if (canvasLocked) {
                 surfaceHolder.unlockCanvasAndPost(canvas);
             }
         }
+    }
+
+    private void drawDiagnostics(Canvas canvas, int width, int height) {
+        float centerX = width / 2f;
+        float firstLineY = Math.max(48f * density, height * 0.3f);
+        float lineSpacing = 28f * density;
+        float panelLeft = 16f * density;
+        float panelTop = firstLineY - 30f * density;
+        float panelRight = width - panelLeft;
+        float panelBottom = firstLineY + lineSpacing * 5f + 10f * density;
+
+        canvas.drawRect(
+                panelLeft,
+                panelTop,
+                panelRight,
+                panelBottom,
+                diagnosticPanelPaint
+        );
+        canvas.drawText(foundationTitle, centerX, firstLineY, titlePaint);
+        canvas.drawText(machineLine, centerX, firstLineY + lineSpacing * 2f, infoPaint);
+        canvas.drawText(difficultyLine, centerX, firstLineY + lineSpacing * 3f, infoPaint);
+        canvas.drawText(runningLine, centerX, firstLineY + lineSpacing * 5f, infoPaint);
     }
 
     private boolean paceFrame(long frameStartTime) {
