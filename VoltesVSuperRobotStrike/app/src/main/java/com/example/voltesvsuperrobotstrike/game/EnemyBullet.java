@@ -1,5 +1,6 @@
 package com.example.voltesvsuperrobotstrike.game;
 
+import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 
@@ -21,6 +22,7 @@ public final class EnemyBullet {
     private static final int SCOUT_DRONE_2_COLOR = 0xFF72E6FF;
     private static final int BOAZANIAN_COLOR = 0xFFB9FF70;
 
+    private final Bitmap bitmap;
     private final float width;
     private final float height;
     private final float verticalSpeedPixelsPerSecond;
@@ -30,6 +32,7 @@ public final class EnemyBullet {
     private float y;
 
     public EnemyBullet(
+            Bitmap bitmap,
             float centerX,
             float y,
             float width,
@@ -37,6 +40,7 @@ public final class EnemyBullet {
             float verticalSpeedPixelsPerSecond,
             int visualType
     ) {
+        this.bitmap = bitmap;
         this.width = width;
         this.height = height;
         this.verticalSpeedPixelsPerSecond = verticalSpeedPixelsPerSecond;
@@ -50,6 +54,11 @@ public final class EnemyBullet {
     }
 
     public void draw(Canvas canvas, Paint paint) {
+        if (bitmap != null && !bitmap.isRecycled()) {
+            canvas.drawBitmap(bitmap, x, y, paint);
+            return;
+        }
+
         paint.setColor(getColor());
 
         float centerX = x + width / 2f;

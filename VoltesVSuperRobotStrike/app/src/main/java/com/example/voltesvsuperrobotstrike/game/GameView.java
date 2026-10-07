@@ -4,6 +4,7 @@ import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
+import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Typeface;
 import android.util.AttributeSet;
@@ -165,7 +166,9 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
     private final Paint projectilePaint = new Paint(
             Paint.ANTI_ALIAS_FLAG | Paint.FILTER_BITMAP_FLAG
     );
-    private final Paint enemyProjectilePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Paint enemyProjectilePaint = new Paint(
+            Paint.ANTI_ALIAS_FLAG | Paint.FILTER_BITMAP_FLAG
+    );
     private final Paint enemyPaint = new Paint(
             Paint.ANTI_ALIAS_FLAG | Paint.FILTER_BITMAP_FLAG
     );
@@ -209,6 +212,15 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
     private Bitmap boazanianEnemyBitmap;
     private int preparedEnemyWidth;
     private int preparedEnemyHeight;
+    private Bitmap scoutEnemyProjectileBitmap;
+    private Bitmap scoutDrone2EnemyProjectileBitmap;
+    private Bitmap hornetEnemyProjectileBitmap;
+    private Bitmap heavyBomberEnemyProjectileBitmap;
+    private Bitmap crabEnemyProjectileBitmap;
+    private Bitmap boazanianEnemyProjectileBitmap;
+    private Bitmap eliteEnemyProjectileBitmap;
+    private int preparedEnemyProjectileWidth;
+    private int preparedEnemyProjectileHeight;
     private float enemySpawnCooldownSeconds = ENEMY_FIRST_SPAWN_DELAY_SECONDS;
     private float gameplayTimeSeconds;
     private boolean alternatingSpawnFromLeft;
@@ -296,6 +308,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
         gameplayTimeSeconds = 0f;
         alternatingSpawnFromLeft = false;
         releaseEnemyBitmaps();
+        releaseEnemyProjectileBitmaps();
         score = 0;
         updateScoreLine();
         playerLives = INITIAL_PLAYER_LIVES;
@@ -328,6 +341,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
 
         prepareProjectileBitmapIfReady();
         prepareEnemyBitmapsIfReady();
+        prepareEnemyProjectileBitmapsIfReady();
 
         updateDiagnosticLines();
     }
@@ -350,6 +364,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
         releaseProjectileBitmap();
         enemies.clear();
         releaseEnemyBitmaps();
+        releaseEnemyProjectileBitmaps();
 
         Player currentPlayer = player;
         if (currentPlayer != null) {
@@ -409,10 +424,12 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
                 gameplayTimeSeconds = 0f;
                 alternatingSpawnFromLeft = false;
                 releaseEnemyBitmaps();
+                releaseEnemyProjectileBitmaps();
             }
 
             prepareProjectileBitmapIfReady();
             prepareEnemyBitmapsIfReady();
+            prepareEnemyProjectileBitmapsIfReady();
         }
 
         if (restartGameThread) {
@@ -826,12 +843,18 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
 
     private void spawnEnemyBullet(Enemy enemy) {
         int enemyType = enemy.getType();
-        float width = Math.max(1f, screenWidth * getEnemyBulletWidthRatio(enemyType));
-        float height = width * getEnemyBulletHeightRatio(enemyType);
+        Bitmap projectileBitmap = getEnemyProjectileBitmap(enemyType);
+        float width = projectileBitmap == null
+                ? Math.max(1f, screenWidth * getEnemyBulletWidthRatio(enemyType))
+                : projectileBitmap.getWidth();
+        float height = projectileBitmap == null
+                ? width * getEnemyBulletHeightRatio(enemyType)
+                : projectileBitmap.getHeight();
         float spawnY = enemy.getBottom() - height * 0.2f;
         float speed = screenHeight * getEnemyBulletSpeedHeightRatio(enemyType);
 
         enemyBullets.add(new EnemyBullet(
+                projectileBitmap,
                 enemy.getCenterX(),
                 spawnY,
                 width,
@@ -986,6 +1009,26 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
             case ENEMY_SCOUT:
             default:
                 return EnemyBullet.VISUAL_SCOUT;
+        }
+    }
+
+    private Bitmap getEnemyProjectileBitmap(int enemyType) {
+        switch (enemyType) {
+            case ENEMY_HORNET:
+                return hornetEnemyProjectileBitmap;
+            case ENEMY_HEAVY_BOMBER:
+                return heavyBomberEnemyProjectileBitmap;
+            case ENEMY_CRAB:
+                return crabEnemyProjectileBitmap;
+            case ENEMY_ELITE:
+                return eliteEnemyProjectileBitmap;
+            case ENEMY_SCOUT_DRONE_2:
+                return scoutDrone2EnemyProjectileBitmap;
+            case ENEMY_BOAZANIAN:
+                return boazanianEnemyProjectileBitmap;
+            case ENEMY_SCOUT:
+            default:
+                return scoutEnemyProjectileBitmap;
         }
     }
 
@@ -1264,6 +1307,154 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
         preparedEnemyHeight = screenHeight;
     }
 
+    private void prepareEnemyProjectileBitmapsIfReady() {
+        if (screenWidth <= 0 || screenHeight <= 0) {
+            return;
+        }
+
+        if (preparedEnemyProjectileWidth == screenWidth
+                && preparedEnemyProjectileHeight == screenHeight
+                && areEnemyProjectileBitmapsReady()) {
+            return;
+        }
+
+        releaseEnemyProjectileBitmaps();
+        scoutEnemyProjectileBitmap = loadScaledEnemyProjectileBitmap(
+                R.drawable.enemy_projectile_scout_drone,
+                0.030f,
+                true
+        );
+        scoutDrone2EnemyProjectileBitmap = loadScaledEnemyProjectileBitmap(
+                R.drawable.enemy_projectile_scout_drone_2,
+                0.035f,
+                true
+        );
+        hornetEnemyProjectileBitmap = loadScaledEnemyProjectileBitmap(
+                R.drawable.enemy_projectile_hornet_fighter,
+                0.030f,
+                true
+        );
+        heavyBomberEnemyProjectileBitmap = loadScaledEnemyProjectileBitmap(
+                R.drawable.enemy_projectile_heavy_bomber,
+                0.060f,
+                true
+        );
+        crabEnemyProjectileBitmap = loadScaledEnemyProjectileBitmap(
+                R.drawable.enemy_projectile_crab_tank,
+                0.050f,
+                false
+        );
+        boazanianEnemyProjectileBitmap = loadScaledEnemyProjectileBitmap(
+                R.drawable.enemy_projectile_boazanian_spike,
+                0.050f,
+                false
+        );
+        eliteEnemyProjectileBitmap = loadScaledEnemyProjectileBitmap(
+                R.drawable.enemy_projectile_elite_commander,
+                0.060f,
+                true
+        );
+        preparedEnemyProjectileWidth = screenWidth;
+        preparedEnemyProjectileHeight = screenHeight;
+    }
+
+    private Bitmap loadScaledEnemyProjectileBitmap(
+            int resourceId,
+            float visibleWidthRatio,
+            boolean rotate180
+    ) {
+        Bitmap sourceBitmap = BitmapFactory.decodeResource(getResources(), resourceId);
+        if (sourceBitmap == null
+                || sourceBitmap.getWidth() <= 0
+                || sourceBitmap.getHeight() <= 0) {
+            return null;
+        }
+
+        Bitmap croppedBitmap = cropToOpaqueBounds(sourceBitmap);
+        if (croppedBitmap != sourceBitmap) {
+            sourceBitmap.recycle();
+        }
+
+        int targetWidth = Math.max(1, Math.round(screenWidth * visibleWidthRatio));
+        int targetHeight = Math.max(
+                1,
+                Math.round(croppedBitmap.getHeight()
+                        * (targetWidth / (float) croppedBitmap.getWidth()))
+        );
+        Bitmap scaledBitmap = Bitmap.createScaledBitmap(
+                croppedBitmap,
+                targetWidth,
+                targetHeight,
+                true
+        );
+
+        if (scaledBitmap != croppedBitmap) {
+            croppedBitmap.recycle();
+        }
+
+        if (!rotate180) {
+            return scaledBitmap;
+        }
+
+        Matrix rotation = new Matrix();
+        rotation.postRotate(180f);
+        Bitmap rotatedBitmap = Bitmap.createBitmap(
+                scaledBitmap,
+                0,
+                0,
+                scaledBitmap.getWidth(),
+                scaledBitmap.getHeight(),
+                rotation,
+                true
+        );
+        if (rotatedBitmap != scaledBitmap) {
+            scaledBitmap.recycle();
+        }
+        return rotatedBitmap;
+    }
+
+    private Bitmap cropToOpaqueBounds(Bitmap sourceBitmap) {
+        int sourceWidth = sourceBitmap.getWidth();
+        int sourceHeight = sourceBitmap.getHeight();
+        int minimumX = sourceWidth;
+        int minimumY = sourceHeight;
+        int maximumX = -1;
+        int maximumY = -1;
+        int[] rowPixels = new int[sourceWidth];
+
+        for (int y = 0; y < sourceHeight; y++) {
+            sourceBitmap.getPixels(rowPixels, 0, sourceWidth, 0, y, sourceWidth, 1);
+            for (int x = 0; x < sourceWidth; x++) {
+                if (((rowPixels[x] >>> 24) & 0xFF) <= 8) {
+                    continue;
+                }
+
+                minimumX = Math.min(minimumX, x);
+                minimumY = Math.min(minimumY, y);
+                maximumX = Math.max(maximumX, x);
+                maximumY = Math.max(maximumY, y);
+            }
+        }
+
+        if (maximumX < minimumX || maximumY < minimumY) {
+            return sourceBitmap;
+        }
+        if (minimumX == 0
+                && minimumY == 0
+                && maximumX == sourceWidth - 1
+                && maximumY == sourceHeight - 1) {
+            return sourceBitmap;
+        }
+
+        return Bitmap.createBitmap(
+                sourceBitmap,
+                minimumX,
+                minimumY,
+                maximumX - minimumX + 1,
+                maximumY - minimumY + 1
+        );
+    }
+
     private Bitmap loadScaledEnemyBitmap(int resourceId, float widthRatio) {
         Bitmap sourceBitmap = BitmapFactory.decodeResource(getResources(), resourceId);
         if (sourceBitmap == null
@@ -1302,6 +1493,16 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
                 && boazanianEnemyBitmap != null;
     }
 
+    private boolean areEnemyProjectileBitmapsReady() {
+        return scoutEnemyProjectileBitmap != null
+                && scoutDrone2EnemyProjectileBitmap != null
+                && hornetEnemyProjectileBitmap != null
+                && heavyBomberEnemyProjectileBitmap != null
+                && crabEnemyProjectileBitmap != null
+                && boazanianEnemyProjectileBitmap != null
+                && eliteEnemyProjectileBitmap != null;
+    }
+
     private void releaseEnemyBitmaps() {
         releaseBitmap(scoutEnemyBitmap);
         releaseBitmap(hornetEnemyBitmap);
@@ -1319,6 +1520,25 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
         boazanianEnemyBitmap = null;
         preparedEnemyWidth = 0;
         preparedEnemyHeight = 0;
+    }
+
+    private void releaseEnemyProjectileBitmaps() {
+        releaseBitmap(scoutEnemyProjectileBitmap);
+        releaseBitmap(scoutDrone2EnemyProjectileBitmap);
+        releaseBitmap(hornetEnemyProjectileBitmap);
+        releaseBitmap(heavyBomberEnemyProjectileBitmap);
+        releaseBitmap(crabEnemyProjectileBitmap);
+        releaseBitmap(boazanianEnemyProjectileBitmap);
+        releaseBitmap(eliteEnemyProjectileBitmap);
+        scoutEnemyProjectileBitmap = null;
+        scoutDrone2EnemyProjectileBitmap = null;
+        hornetEnemyProjectileBitmap = null;
+        heavyBomberEnemyProjectileBitmap = null;
+        crabEnemyProjectileBitmap = null;
+        boazanianEnemyProjectileBitmap = null;
+        eliteEnemyProjectileBitmap = null;
+        preparedEnemyProjectileWidth = 0;
+        preparedEnemyProjectileHeight = 0;
     }
 
     private void releaseBitmap(Bitmap bitmap) {
