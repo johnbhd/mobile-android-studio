@@ -1,10 +1,12 @@
 package com.example.voltesvsuperrobotstrike.activities;
 
 import android.content.Intent;
+import android.animation.Animator;
+import android.animation.AnimatorListenerAdapter;
+import android.animation.ValueAnimator;
 import android.os.Bundle;
-import android.os.Handler;
-import android.os.Looper;
 import android.view.View;
+import android.widget.ProgressBar;
 
 import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
@@ -19,15 +21,8 @@ public class SplashActivity extends AppCompatActivity {
 
     private static final long SPLASH_DURATION_MS = 1500L;
 
-    private final Handler splashHandler = new Handler(Looper.getMainLooper());
+    private ValueAnimator splashProgressAnimator;
     private boolean hasOpenedMainMenu;
-
-    private final Runnable openMainMenuRunnable = new Runnable() {
-        @Override
-        public void run() {
-            openMainMenu();
-        }
-    };
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -36,7 +31,31 @@ public class SplashActivity extends AppCompatActivity {
         setContentView(R.layout.activity_splash);
 
         applySystemBarInsets();
-        splashHandler.postDelayed(openMainMenuRunnable, SPLASH_DURATION_MS);
+        startSplashProgress();
+    }
+
+    private void startSplashProgress() {
+        ProgressBar progressBar = findViewById(R.id.splash_loading_indicator);
+        progressBar.setMax(100);
+        progressBar.setProgress(0);
+
+        splashProgressAnimator = ValueAnimator.ofInt(0, 100);
+        splashProgressAnimator.setDuration(SPLASH_DURATION_MS);
+        splashProgressAnimator.addUpdateListener((animator) -> {
+            progressBar.setProgress((Integer) animator.getAnimatedValue());
+        });
+        splashProgressAnimator.addListener(new AnimatorListenerAdapter() {
+            @Override
+            public void onAnimationEnd(Animator animation) {
+                if (animation != splashProgressAnimator
+                        || isFinishing()
+                        || isChangingConfigurations()) {
+                    return;
+                }
+                openMainMenu();
+            }
+        });
+        splashProgressAnimator.start();
     }
 
     private void applySystemBarInsets() {
@@ -75,7 +94,11 @@ public class SplashActivity extends AppCompatActivity {
 
     @Override
     protected void onDestroy() {
-        splashHandler.removeCallbacks(openMainMenuRunnable);
+        ValueAnimator animator = splashProgressAnimator;
+        splashProgressAnimator = null;
+        if (animator != null) {
+            animator.cancel();
+        }
         super.onDestroy();
     }
 }

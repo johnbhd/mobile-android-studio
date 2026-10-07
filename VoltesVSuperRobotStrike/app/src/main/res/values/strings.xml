@@ -3,7 +3,7 @@
     <string name="game_title">VOLTES V</string>
     <string name="game_subtitle">SUPER ROBOT STRIKE</string>
     <string name="splash_branding_description">Voltes V: Super Robot Strike branding</string>
-    <string name="splash_loading">PREPARING MISSION...</string>
+    <string name="splash_loading">LOADING...</string>
 
     <string name="menu_start_game">START GAME</string>
     <string name="menu_how_to_play">HOW TO PLAY</string>
