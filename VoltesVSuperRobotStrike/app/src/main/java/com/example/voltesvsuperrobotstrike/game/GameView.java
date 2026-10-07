@@ -48,17 +48,28 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
     private static final float CRAB_FIRE_INTERVAL_MAX_SECONDS = 2.7f;
     private static final float ELITE_FIRE_INTERVAL_MIN_SECONDS = 1.4f;
     private static final float ELITE_FIRE_INTERVAL_MAX_SECONDS = 1.9f;
+    private static final float SCOUT_DRONE_2_FIRE_INTERVAL_MIN_SECONDS = 1.9f;
+    private static final float SCOUT_DRONE_2_FIRE_INTERVAL_MAX_SECONDS = 2.5f;
+    private static final float BOAZANIAN_FIRE_INTERVAL_MIN_SECONDS = 1.8f;
+    private static final float BOAZANIAN_FIRE_INTERVAL_MAX_SECONDS = 2.4f;
+    private static final float ENEMY_BURST_SHOT_INTERVAL_SECONDS = 0.20f;
     private static final float SCOUT_BULLET_SPEED_HEIGHT_RATIO = 0.42f;
     private static final float HORNET_BULLET_SPEED_HEIGHT_RATIO = 0.48f;
     private static final float HEAVY_BULLET_SPEED_HEIGHT_RATIO = 0.30f;
     private static final float CRAB_BULLET_SPEED_HEIGHT_RATIO = 0.35f;
     private static final float ELITE_BULLET_SPEED_HEIGHT_RATIO = 0.45f;
+    private static final float SCOUT_DRONE_2_BULLET_SPEED_HEIGHT_RATIO = 0.40f;
+    private static final float BOAZANIAN_BULLET_SPEED_HEIGHT_RATIO = 0.38f;
     private static final int SCORE_SCOUT = 100;
     private static final int SCORE_HORNET = 150;
     private static final int SCORE_HEAVY_BOMBER = 250;
     private static final int SCORE_CRAB = 300;
     private static final int SCORE_ELITE = 500;
+    private static final int SCORE_SCOUT_DRONE_2 = 125;
+    private static final int SCORE_BOAZANIAN = 400;
     private static final float ENEMY_FIRST_SPAWN_DELAY_SECONDS = 0.85f;
+    private static final float ENEMY_OPENING_PHASE_SECONDS = 20f;
+    private static final float ENEMY_MID_PHASE_SECONDS = 45f;
     private static final float ENEMY_SIDE_MARGIN_DP = 6f;
     private static final float SCOUT_SPEED_HEIGHT_RATIO = 0.24f;
     private static final float HORNET_SPEED_HEIGHT_RATIO = 0.27f;
@@ -68,29 +79,81 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
     private static final float HORNET_DRIFT_WIDTH_RATIO = 0.06f;
     private static final float CRAB_DRIFT_WIDTH_RATIO = 0.04f;
     private static final float ELITE_DRIFT_WIDTH_RATIO = 0.03f;
+    private static final float SCOUT_DRONE_2_DRIFT_WIDTH_RATIO = 0.05f;
+    private static final float BOAZANIAN_DRIFT_WIDTH_RATIO = 0.04f;
     private static final int ENEMY_SCOUT = 0;
     private static final int ENEMY_HORNET = 1;
     private static final int ENEMY_HEAVY_BOMBER = 2;
     private static final int ENEMY_CRAB = 3;
     private static final int ENEMY_ELITE = 4;
-    private static final int[] EASY_ENEMY_POOL = {
-            ENEMY_SCOUT, ENEMY_SCOUT, ENEMY_SCOUT, ENEMY_SCOUT,
-            ENEMY_SCOUT, ENEMY_SCOUT, ENEMY_SCOUT,
-            ENEMY_HORNET, ENEMY_HORNET, ENEMY_HORNET
-    };
-    private static final int[] NORMAL_ENEMY_POOL = {
+    private static final int ENEMY_SCOUT_DRONE_2 = 5;
+    private static final int ENEMY_BOAZANIAN = 6;
+    private static final int SPAWN_SINGLE = 0;
+    private static final int SPAWN_PAIR = 1;
+    private static final int SPAWN_ALTERNATING = 2;
+    private static final int SPAWN_ROW = 3;
+    private static final int SPAWN_STAGGERED = 4;
+    private static final int SPAWN_ELITE_ESCORT = 5;
+    private static final int[] EASY_OPENING_ENEMY_POOL = {
             ENEMY_SCOUT, ENEMY_SCOUT, ENEMY_SCOUT, ENEMY_SCOUT, ENEMY_SCOUT,
-            ENEMY_SCOUT, ENEMY_SCOUT, ENEMY_SCOUT, ENEMY_SCOUT,
-            ENEMY_HORNET, ENEMY_HORNET, ENEMY_HORNET, ENEMY_HORNET,
-            ENEMY_HORNET, ENEMY_HORNET, ENEMY_HORNET,
-            ENEMY_HEAVY_BOMBER, ENEMY_HEAVY_BOMBER, ENEMY_HEAVY_BOMBER, ENEMY_HEAVY_BOMBER
+            ENEMY_SCOUT_DRONE_2, ENEMY_HORNET, ENEMY_HORNET
     };
-    private static final int[] HARD_ENEMY_POOL = {
+    private static final int[] EASY_MID_ENEMY_POOL = {
+            ENEMY_SCOUT, ENEMY_SCOUT, ENEMY_SCOUT, ENEMY_SCOUT,
+            ENEMY_SCOUT_DRONE_2, ENEMY_SCOUT_DRONE_2,
+            ENEMY_HORNET, ENEMY_HORNET, ENEMY_HEAVY_BOMBER, ENEMY_CRAB
+    };
+    private static final int[] EASY_FULL_ENEMY_POOL = {
             ENEMY_SCOUT, ENEMY_SCOUT, ENEMY_SCOUT, ENEMY_SCOUT, ENEMY_SCOUT, ENEMY_SCOUT,
-            ENEMY_HORNET, ENEMY_HORNET, ENEMY_HORNET, ENEMY_HORNET, ENEMY_HORNET,
-            ENEMY_HEAVY_BOMBER, ENEMY_HEAVY_BOMBER, ENEMY_HEAVY_BOMBER, ENEMY_HEAVY_BOMBER,
-            ENEMY_CRAB, ENEMY_CRAB, ENEMY_CRAB,
-            ENEMY_ELITE, ENEMY_ELITE
+            ENEMY_SCOUT_DRONE_2, ENEMY_SCOUT_DRONE_2,
+            ENEMY_HORNET, ENEMY_HORNET, ENEMY_HEAVY_BOMBER, ENEMY_CRAB,
+            ENEMY_BOAZANIAN, ENEMY_ELITE
+    };
+    private static final int[] NORMAL_OPENING_ENEMY_POOL = {
+            ENEMY_SCOUT, ENEMY_SCOUT, ENEMY_SCOUT, ENEMY_SCOUT,
+            ENEMY_SCOUT_DRONE_2, ENEMY_SCOUT_DRONE_2,
+            ENEMY_HORNET, ENEMY_HORNET
+    };
+    private static final int[] NORMAL_MID_ENEMY_POOL = {
+            ENEMY_SCOUT, ENEMY_SCOUT, ENEMY_SCOUT,
+            ENEMY_SCOUT_DRONE_2, ENEMY_SCOUT_DRONE_2,
+            ENEMY_HORNET, ENEMY_HORNET,
+            ENEMY_HEAVY_BOMBER, ENEMY_HEAVY_BOMBER, ENEMY_CRAB
+    };
+    private static final int[] NORMAL_FULL_ENEMY_POOL = {
+            ENEMY_SCOUT, ENEMY_SCOUT, ENEMY_SCOUT,
+            ENEMY_SCOUT_DRONE_2, ENEMY_SCOUT_DRONE_2,
+            ENEMY_HORNET, ENEMY_HORNET,
+            ENEMY_HEAVY_BOMBER, ENEMY_HEAVY_BOMBER,
+            ENEMY_CRAB, ENEMY_CRAB,
+            ENEMY_BOAZANIAN, ENEMY_BOAZANIAN, ENEMY_ELITE
+    };
+    private static final int[] HARD_OPENING_ENEMY_POOL = {
+            ENEMY_SCOUT, ENEMY_SCOUT, ENEMY_SCOUT,
+            ENEMY_SCOUT_DRONE_2, ENEMY_SCOUT_DRONE_2,
+            ENEMY_HORNET, ENEMY_HORNET
+    };
+    private static final int[] HARD_MID_ENEMY_POOL = {
+            ENEMY_SCOUT, ENEMY_SCOUT, ENEMY_SCOUT_DRONE_2,
+            ENEMY_HORNET, ENEMY_HORNET,
+            ENEMY_HEAVY_BOMBER, ENEMY_HEAVY_BOMBER,
+            ENEMY_CRAB, ENEMY_CRAB, ENEMY_BOAZANIAN, ENEMY_ELITE
+    };
+    private static final int[] HARD_FULL_ENEMY_POOL = {
+            ENEMY_SCOUT, ENEMY_SCOUT,
+            ENEMY_SCOUT_DRONE_2, ENEMY_SCOUT_DRONE_2,
+            ENEMY_HORNET, ENEMY_HORNET,
+            ENEMY_HEAVY_BOMBER, ENEMY_HEAVY_BOMBER,
+            ENEMY_CRAB, ENEMY_CRAB,
+            ENEMY_BOAZANIAN, ENEMY_BOAZANIAN,
+            ENEMY_ELITE, ENEMY_ELITE, ENEMY_ELITE
+    };
+    private static final int[] BASIC_ESCORT_POOL = {
+            ENEMY_SCOUT,
+            ENEMY_SCOUT_DRONE_2,
+            ENEMY_HORNET,
+            ENEMY_HEAVY_BOMBER,
+            ENEMY_CRAB
     };
     private static final long TARGET_FRAME_DURATION_NANOS = 1_000_000_000L / 60L;
     private static final long THREAD_JOIN_TIMEOUT_MILLIS = 500L;
@@ -142,9 +205,13 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
     private Bitmap heavyBomberEnemyBitmap;
     private Bitmap crabEnemyBitmap;
     private Bitmap eliteEnemyBitmap;
+    private Bitmap scoutDrone2EnemyBitmap;
+    private Bitmap boazanianEnemyBitmap;
     private int preparedEnemyWidth;
     private int preparedEnemyHeight;
     private float enemySpawnCooldownSeconds = ENEMY_FIRST_SPAWN_DELAY_SECONDS;
+    private float gameplayTimeSeconds;
+    private boolean alternatingSpawnFromLeft;
 
     private String selectedMachineId = "volt_crewzer";
     private String selectedDifficultyId = "normal";
@@ -226,6 +293,8 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
         releaseProjectileBitmap();
         enemies.clear();
         enemySpawnCooldownSeconds = ENEMY_FIRST_SPAWN_DELAY_SECONDS;
+        gameplayTimeSeconds = 0f;
+        alternatingSpawnFromLeft = false;
         releaseEnemyBitmaps();
         score = 0;
         updateScoreLine();
@@ -337,6 +406,8 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
                 fireCooldownSeconds = AUTO_FIRE_INTERVAL_SECONDS;
                 enemies.clear();
                 enemySpawnCooldownSeconds = ENEMY_FIRST_SPAWN_DELAY_SECONDS;
+                gameplayTimeSeconds = 0f;
+                alternatingSpawnFromLeft = false;
                 releaseEnemyBitmaps();
             }
 
@@ -430,6 +501,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
         updatePlayerInvulnerability(deltaSeconds);
         scrollingBackground.update(deltaSeconds);
 
+        gameplayTimeSeconds += deltaSeconds;
         updateEnemySpawning(deltaSeconds);
         updateEnemies(deltaSeconds);
 
@@ -522,7 +594,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
             return;
         }
 
-        spawnEnemy();
+        spawnEnemyWave();
     }
 
     private void updateEnemies(float deltaSeconds) {
@@ -540,8 +612,49 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
         }
     }
 
-    private void spawnEnemy() {
-        int enemyType = selectEnemyType();
+    private void spawnEnemyWave() {
+        int availableSlots = getMaximumActiveEnemies() - enemies.size();
+        if (availableSlots <= 0) {
+            return;
+        }
+
+        int spawnPattern = selectSpawnPattern();
+        if (spawnPattern == SPAWN_ELITE_ESCORT) {
+            spawnEnemy(ENEMY_ELITE, getPatternSpawnX(SPAWN_ELITE_ESCORT, 0, 1), 0f);
+            availableSlots--;
+            if (availableSlots > 0) {
+                spawnEnemy(
+                        selectBasicEscortType(),
+                        getPatternSpawnX(SPAWN_ELITE_ESCORT, 1, 2),
+                        0f
+                );
+            }
+            if (availableSlots > 1 && enemyRandom.nextBoolean()) {
+                spawnEnemy(
+                        selectBasicEscortType(),
+                        getPatternSpawnX(SPAWN_ELITE_ESCORT, 0, 2),
+                        -0.55f
+                );
+            }
+            return;
+        }
+
+        int requestedCount = getSpawnPatternCount(spawnPattern);
+        int count = Math.min(requestedCount, availableSlots);
+        for (int index = 0; index < count; index++) {
+            float spawnX = getPatternSpawnX(spawnPattern, index, count);
+            float spawnYOffset = spawnPattern == SPAWN_STAGGERED
+                    ? index * -0.55f
+                    : 0f;
+            spawnEnemy(selectEnemyType(), spawnX, spawnYOffset);
+        }
+    }
+
+    private void spawnEnemy(
+            int enemyType,
+            float preferredX,
+            float spawnYOffset
+    ) {
         Bitmap bitmap = getEnemyBitmap(enemyType);
         if (bitmap == null) {
             return;
@@ -549,14 +662,24 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
 
         float minimumX = enemySideMarginPixels;
         float maximumX = screenWidth - bitmap.getWidth() - enemySideMarginPixels;
-        float spawnX = maximumX <= minimumX
-                ? Math.max(0f, (screenWidth - bitmap.getWidth()) / 2f)
-                : minimumX + enemyRandom.nextFloat() * (maximumX - minimumX);
-        float spawnY = -bitmap.getHeight();
+        float spawnX = Float.isNaN(preferredX)
+                ? minimumX + enemyRandom.nextFloat() * Math.max(0f, maximumX - minimumX)
+                : preferredX;
+        if (maximumX <= minimumX) {
+            spawnX = Math.max(0f, (screenWidth - bitmap.getWidth()) / 2f);
+        } else {
+            spawnX = Math.max(minimumX, Math.min(spawnX, maximumX));
+        }
+
+        float spawnY = -bitmap.getHeight() + spawnYOffset * bitmap.getHeight();
         float verticalSpeed = screenHeight
                 * getEnemySpeedRatio(enemyType)
                 * getEnemySpeedMultiplier();
         float horizontalSpeed = getEnemyHorizontalSpeed(enemyType);
+        int movementPattern = selectMovementPattern(enemyType);
+        float movementAmplitude = getMovementAmplitudePixels(enemyType, movementPattern);
+        float movementFrequency = getMovementFrequency(enemyType, movementPattern);
+        float movementPhase = enemyRandom.nextFloat() * (float) (Math.PI * 2.0);
 
         Enemy enemy = new Enemy(
                 bitmap,
@@ -565,10 +688,100 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
                 spawnY,
                 verticalSpeed,
                 horizontalSpeed,
-                screenWidth
+                screenWidth,
+                movementPattern,
+                movementAmplitude,
+                movementFrequency,
+                movementPhase
         );
         enemy.resetFireCooldown(getInitialEnemyFireDelaySeconds());
         enemies.add(enemy);
+    }
+
+    private int selectSpawnPattern() {
+        int roll = enemyRandom.nextInt(100);
+        if ("easy".equals(selectedDifficultyId)) {
+            if (roll < 70) {
+                return SPAWN_SINGLE;
+            }
+            if (roll < 85) {
+                return SPAWN_ALTERNATING;
+            }
+            return SPAWN_PAIR;
+        }
+        if ("hard".equals(selectedDifficultyId)) {
+            if (roll < 30) {
+                return SPAWN_SINGLE;
+            }
+            if (roll < 50) {
+                return SPAWN_PAIR;
+            }
+            if (roll < 65) {
+                return SPAWN_ALTERNATING;
+            }
+            if (roll < 80) {
+                return SPAWN_ROW;
+            }
+            if (roll < 92) {
+                return SPAWN_STAGGERED;
+            }
+            return isFullRosterPhase() ? SPAWN_ELITE_ESCORT : SPAWN_STAGGERED;
+        }
+        if (roll < 50) {
+            return SPAWN_SINGLE;
+        }
+        if (roll < 68) {
+            return SPAWN_PAIR;
+        }
+        if (roll < 80) {
+            return SPAWN_ALTERNATING;
+        }
+        if (roll < 90) {
+            return SPAWN_ROW;
+        }
+        if (roll < 97) {
+            return SPAWN_STAGGERED;
+        }
+        return isFullRosterPhase() ? SPAWN_ELITE_ESCORT : SPAWN_STAGGERED;
+    }
+
+    private int getSpawnPatternCount(int spawnPattern) {
+        switch (spawnPattern) {
+            case SPAWN_PAIR:
+            case SPAWN_ALTERNATING:
+            case SPAWN_STAGGERED:
+                return 2;
+            case SPAWN_ROW:
+                return enemyRandom.nextBoolean() ? 2 : 3;
+            case SPAWN_SINGLE:
+            default:
+                return 1;
+        }
+    }
+
+    private float getPatternSpawnX(int spawnPattern, int index, int count) {
+        if (count <= 1) {
+            return Float.NaN;
+        }
+
+        if (spawnPattern == SPAWN_ALTERNATING) {
+            boolean leftFirst = alternatingSpawnFromLeft;
+            if (index == 0) {
+                alternatingSpawnFromLeft = !alternatingSpawnFromLeft;
+            }
+            return screenWidth * ((index == 0) == leftFirst ? 0.10f : 0.68f);
+        }
+
+        if (count == 2 && spawnPattern != SPAWN_ROW) {
+            return screenWidth * (index == 0 ? 0.16f : 0.68f);
+        }
+
+        float fraction = (index + 1f) / (count + 1f);
+        return screenWidth * fraction;
+    }
+
+    private int selectBasicEscortType() {
+        return BASIC_ESCORT_POOL[enemyRandom.nextInt(BASIC_ESCORT_POOL.length)];
     }
 
     private void updateEnemyShooting() {
@@ -589,9 +802,26 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
                 continue;
             }
 
+            if (!enemy.hasPendingFireShots()) {
+                enemy.beginFireSequence(getFireSequenceShotCount(enemy.getType()));
+            }
+
             spawnEnemyBullet(enemy);
-            enemy.resetFireCooldown(getNextEnemyFireIntervalSeconds(enemy.getType()));
+            enemy.consumeFireShot();
+            enemy.resetFireCooldown(enemy.hasPendingFireShots()
+                    ? ENEMY_BURST_SHOT_INTERVAL_SECONDS
+                    : getNextEnemyFireIntervalSeconds(enemy.getType()));
         }
+    }
+
+    private int getFireSequenceShotCount(int enemyType) {
+        if (enemyType == ENEMY_SCOUT_DRONE_2) {
+            return 2;
+        }
+        if (enemyType == ENEMY_ELITE && enemyRandom.nextInt(4) == 0) {
+            return 3;
+        }
+        return 1;
     }
 
     private void spawnEnemyBullet(Enemy enemy) {
@@ -635,6 +865,10 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
                 return CRAB_FIRE_INTERVAL_MIN_SECONDS;
             case ENEMY_ELITE:
                 return ELITE_FIRE_INTERVAL_MIN_SECONDS;
+            case ENEMY_SCOUT_DRONE_2:
+                return SCOUT_DRONE_2_FIRE_INTERVAL_MIN_SECONDS;
+            case ENEMY_BOAZANIAN:
+                return BOAZANIAN_FIRE_INTERVAL_MIN_SECONDS;
             case ENEMY_SCOUT:
             default:
                 return SCOUT_FIRE_INTERVAL_MIN_SECONDS;
@@ -651,6 +885,10 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
                 return CRAB_FIRE_INTERVAL_MAX_SECONDS;
             case ENEMY_ELITE:
                 return ELITE_FIRE_INTERVAL_MAX_SECONDS;
+            case ENEMY_SCOUT_DRONE_2:
+                return SCOUT_DRONE_2_FIRE_INTERVAL_MAX_SECONDS;
+            case ENEMY_BOAZANIAN:
+                return BOAZANIAN_FIRE_INTERVAL_MAX_SECONDS;
             case ENEMY_SCOUT:
             default:
                 return SCOUT_FIRE_INTERVAL_MAX_SECONDS;
@@ -682,6 +920,8 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
             case ENEMY_HEAVY_BOMBER:
             case ENEMY_ELITE:
                 return 0.06f;
+            case ENEMY_BOAZANIAN:
+                return 0.055f;
             case ENEMY_CRAB:
                 return 0.05f;
             case ENEMY_HORNET:
@@ -698,6 +938,10 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
                 return 2.2f;
             case ENEMY_ELITE:
                 return 1.4f;
+            case ENEMY_SCOUT_DRONE_2:
+                return 1.8f;
+            case ENEMY_BOAZANIAN:
+                return 1.0f;
             case ENEMY_HEAVY_BOMBER:
             case ENEMY_CRAB:
             default:
@@ -715,6 +959,10 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
                 return CRAB_BULLET_SPEED_HEIGHT_RATIO;
             case ENEMY_ELITE:
                 return ELITE_BULLET_SPEED_HEIGHT_RATIO;
+            case ENEMY_SCOUT_DRONE_2:
+                return SCOUT_DRONE_2_BULLET_SPEED_HEIGHT_RATIO;
+            case ENEMY_BOAZANIAN:
+                return BOAZANIAN_BULLET_SPEED_HEIGHT_RATIO;
             case ENEMY_SCOUT:
             default:
                 return SCOUT_BULLET_SPEED_HEIGHT_RATIO;
@@ -731,6 +979,10 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
                 return EnemyBullet.VISUAL_CRAB;
             case ENEMY_ELITE:
                 return EnemyBullet.VISUAL_ELITE;
+            case ENEMY_SCOUT_DRONE_2:
+                return EnemyBullet.VISUAL_SCOUT_DRONE_2;
+            case ENEMY_BOAZANIAN:
+                return EnemyBullet.VISUAL_BOAZANIAN;
             case ENEMY_SCOUT:
             default:
                 return EnemyBullet.VISUAL_SCOUT;
@@ -743,13 +995,62 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
     }
 
     private int[] getEnemyPool() {
+        boolean easy = "easy".equals(selectedDifficultyId);
+        boolean hard = "hard".equals(selectedDifficultyId);
+        float openingPhaseSeconds = getOpeningRosterPhaseSeconds();
+        float midPhaseSeconds = getFullRosterStartSeconds();
+
+        if (gameplayTimeSeconds < openingPhaseSeconds) {
+            if (easy) {
+                return EASY_OPENING_ENEMY_POOL;
+            }
+            if (hard) {
+                return HARD_OPENING_ENEMY_POOL;
+            }
+            return NORMAL_OPENING_ENEMY_POOL;
+        }
+
+        if (gameplayTimeSeconds < midPhaseSeconds) {
+            if (easy) {
+                return EASY_MID_ENEMY_POOL;
+            }
+            if (hard) {
+                return HARD_MID_ENEMY_POOL;
+            }
+            return NORMAL_MID_ENEMY_POOL;
+        }
+
+        if (easy) {
+            return EASY_FULL_ENEMY_POOL;
+        }
+        if (hard) {
+            return HARD_FULL_ENEMY_POOL;
+        }
+        return NORMAL_FULL_ENEMY_POOL;
+    }
+
+    private float getOpeningRosterPhaseSeconds() {
         if ("easy".equals(selectedDifficultyId)) {
-            return EASY_ENEMY_POOL;
+            return ENEMY_OPENING_PHASE_SECONDS * 1.25f;
         }
         if ("hard".equals(selectedDifficultyId)) {
-            return HARD_ENEMY_POOL;
+            return ENEMY_OPENING_PHASE_SECONDS * 0.75f;
         }
-        return NORMAL_ENEMY_POOL;
+        return ENEMY_OPENING_PHASE_SECONDS;
+    }
+
+    private float getFullRosterStartSeconds() {
+        if ("easy".equals(selectedDifficultyId)) {
+            return ENEMY_MID_PHASE_SECONDS * 1.22f;
+        }
+        if ("hard".equals(selectedDifficultyId)) {
+            return ENEMY_MID_PHASE_SECONDS * 0.78f;
+        }
+        return ENEMY_MID_PHASE_SECONDS;
+    }
+
+    private boolean isFullRosterPhase() {
+        return gameplayTimeSeconds >= getFullRosterStartSeconds();
     }
 
     private Bitmap getEnemyBitmap(int enemyType) {
@@ -762,6 +1063,10 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
                 return crabEnemyBitmap;
             case ENEMY_ELITE:
                 return eliteEnemyBitmap;
+            case ENEMY_SCOUT_DRONE_2:
+                return scoutDrone2EnemyBitmap;
+            case ENEMY_BOAZANIAN:
+                return boazanianEnemyBitmap;
             case ENEMY_SCOUT:
             default:
                 return scoutEnemyBitmap;
@@ -778,6 +1083,10 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
                 return CRAB_SPEED_HEIGHT_RATIO;
             case ENEMY_ELITE:
                 return ELITE_SPEED_HEIGHT_RATIO;
+            case ENEMY_SCOUT_DRONE_2:
+                return 0.25f;
+            case ENEMY_BOAZANIAN:
+                return 0.21f;
             case ENEMY_SCOUT:
             default:
                 return SCOUT_SPEED_HEIGHT_RATIO;
@@ -796,6 +1105,12 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
             case ENEMY_ELITE:
                 horizontalSpeedRatio = ELITE_DRIFT_WIDTH_RATIO;
                 break;
+            case ENEMY_SCOUT_DRONE_2:
+                horizontalSpeedRatio = SCOUT_DRONE_2_DRIFT_WIDTH_RATIO;
+                break;
+            case ENEMY_BOAZANIAN:
+                horizontalSpeedRatio = BOAZANIAN_DRIFT_WIDTH_RATIO;
+                break;
             case ENEMY_HEAVY_BOMBER:
             case ENEMY_SCOUT:
             default:
@@ -804,6 +1119,75 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
 
         float horizontalSpeed = screenWidth * horizontalSpeedRatio;
         return enemyRandom.nextBoolean() ? horizontalSpeed : -horizontalSpeed;
+    }
+
+    private int selectMovementPattern(int enemyType) {
+        switch (enemyType) {
+            case ENEMY_SCOUT_DRONE_2:
+                return enemyRandom.nextBoolean()
+                        ? Enemy.MOVEMENT_STRAIGHT
+                        : Enemy.MOVEMENT_ZIGZAG;
+            case ENEMY_HORNET:
+                switch (enemyRandom.nextInt(3)) {
+                    case 1:
+                        return Enemy.MOVEMENT_ZIGZAG;
+                    case 2:
+                        return Enemy.MOVEMENT_SWAY;
+                    case 0:
+                    default:
+                        return Enemy.MOVEMENT_DRIFT;
+                }
+            case ENEMY_CRAB:
+                return enemyRandom.nextBoolean()
+                        ? Enemy.MOVEMENT_DRIFT
+                        : Enemy.MOVEMENT_SWAY;
+            case ENEMY_BOAZANIAN:
+                return enemyRandom.nextBoolean()
+                        ? Enemy.MOVEMENT_SWAY
+                        : Enemy.MOVEMENT_ZIGZAG;
+            case ENEMY_ELITE:
+                switch (enemyRandom.nextInt(3)) {
+                    case 1:
+                        return Enemy.MOVEMENT_DRIFT;
+                    case 2:
+                        return Enemy.MOVEMENT_SWAY;
+                    case 0:
+                    default:
+                        return Enemy.MOVEMENT_STRAIGHT;
+                }
+            case ENEMY_HEAVY_BOMBER:
+                if (enemyRandom.nextInt(4) == 0) {
+                    return Enemy.MOVEMENT_PAUSE_DROP;
+                }
+                return enemyRandom.nextBoolean()
+                        ? Enemy.MOVEMENT_STRAIGHT
+                        : Enemy.MOVEMENT_DRIFT;
+            case ENEMY_SCOUT:
+            default:
+                return enemyRandom.nextBoolean()
+                        ? Enemy.MOVEMENT_STRAIGHT
+                        : Enemy.MOVEMENT_DRIFT;
+        }
+    }
+
+    private float getMovementAmplitudePixels(int enemyType, int movementPattern) {
+        if (movementPattern == Enemy.MOVEMENT_ZIGZAG) {
+            return screenWidth * (enemyType == ENEMY_SCOUT_DRONE_2 ? 0.08f : 0.07f);
+        }
+        if (movementPattern == Enemy.MOVEMENT_SWAY) {
+            return screenWidth * (enemyType == ENEMY_BOAZANIAN ? 0.10f : 0.08f);
+        }
+        return 0f;
+    }
+
+    private float getMovementFrequency(int enemyType, int movementPattern) {
+        if (movementPattern == Enemy.MOVEMENT_ZIGZAG) {
+            return enemyType == ENEMY_BOAZANIAN ? 2.2f : 2.7f;
+        }
+        if (movementPattern == Enemy.MOVEMENT_SWAY) {
+            return enemyType == ENEMY_BOAZANIAN ? 1.25f : 1.55f;
+        }
+        return 0f;
     }
 
     private float getEnemySpeedMultiplier() {
@@ -818,22 +1202,22 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
 
     private float getEnemySpawnIntervalSeconds() {
         if ("easy".equals(selectedDifficultyId)) {
-            return 1.25f;
+            return 1.35f;
         }
         if ("hard".equals(selectedDifficultyId)) {
-            return 0.75f;
+            return 0.65f;
         }
-        return 1.00f;
+        return 0.95f;
     }
 
     private int getMaximumActiveEnemies() {
         if ("easy".equals(selectedDifficultyId)) {
-            return 3;
-        }
-        if ("hard".equals(selectedDifficultyId)) {
             return 5;
         }
-        return 4;
+        if ("hard".equals(selectedDifficultyId)) {
+            return 9;
+        }
+        return 7;
     }
 
     private void prepareEnemyBitmapsIfReady() {
@@ -867,6 +1251,14 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
         eliteEnemyBitmap = loadScaledEnemyBitmap(
                 R.drawable.enemy_elite_commander,
                 0.18f
+        );
+        scoutDrone2EnemyBitmap = loadScaledEnemyBitmap(
+                R.drawable.enemy_scout_drone_2,
+                0.115f
+        );
+        boazanianEnemyBitmap = loadScaledEnemyBitmap(
+                R.drawable.enemy_boizanian_spike,
+                0.15f
         );
         preparedEnemyWidth = screenWidth;
         preparedEnemyHeight = screenHeight;
@@ -905,7 +1297,9 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
                 && hornetEnemyBitmap != null
                 && heavyBomberEnemyBitmap != null
                 && crabEnemyBitmap != null
-                && eliteEnemyBitmap != null;
+                && eliteEnemyBitmap != null
+                && scoutDrone2EnemyBitmap != null
+                && boazanianEnemyBitmap != null;
     }
 
     private void releaseEnemyBitmaps() {
@@ -914,11 +1308,15 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
         releaseBitmap(heavyBomberEnemyBitmap);
         releaseBitmap(crabEnemyBitmap);
         releaseBitmap(eliteEnemyBitmap);
+        releaseBitmap(scoutDrone2EnemyBitmap);
+        releaseBitmap(boazanianEnemyBitmap);
         scoutEnemyBitmap = null;
         hornetEnemyBitmap = null;
         heavyBomberEnemyBitmap = null;
         crabEnemyBitmap = null;
         eliteEnemyBitmap = null;
+        scoutDrone2EnemyBitmap = null;
+        boazanianEnemyBitmap = null;
         preparedEnemyWidth = 0;
         preparedEnemyHeight = 0;
     }
@@ -1112,6 +1510,10 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
                 return SCORE_CRAB;
             case ENEMY_ELITE:
                 return SCORE_ELITE;
+            case ENEMY_SCOUT_DRONE_2:
+                return SCORE_SCOUT_DRONE_2;
+            case ENEMY_BOAZANIAN:
+                return SCORE_BOAZANIAN;
             case ENEMY_SCOUT:
             default:
                 return SCORE_SCOUT;
