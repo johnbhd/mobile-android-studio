@@ -19,6 +19,7 @@ import androidx.core.view.WindowInsetsCompat;
 import com.example.voltesvsuperrobotstrike.R;
 
 import java.util.ArrayList;
+import java.util.Locale;
 import java.util.Random;
 
 public class GameView extends SurfaceView implements SurfaceHolder.Callback, Runnable {
@@ -27,6 +28,13 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
     private static final float AUTO_FIRE_INTERVAL_SECONDS = 0.35f;
     private static final float PLAYER_BULLET_SPEED_DP_PER_SECOND = 700f;
     private static final float BULLET_PLAYER_OVERLAP_DP = 2f;
+    private static final float BULLET_HITBOX_INSET_RATIO = 0.05f;
+    private static final float ENEMY_HITBOX_INSET_RATIO = 0.10f;
+    private static final int SCORE_SCOUT = 100;
+    private static final int SCORE_HORNET = 150;
+    private static final int SCORE_HEAVY_BOMBER = 250;
+    private static final int SCORE_CRAB = 300;
+    private static final int SCORE_ELITE = 500;
     private static final float ENEMY_FIRST_SPAWN_DELAY_SECONDS = 0.85f;
     private static final float ENEMY_SIDE_MARGIN_DP = 6f;
     private static final float SCOUT_SPEED_HEIGHT_RATIO = 0.24f;
@@ -74,6 +82,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
     private final Paint enemyPaint = new Paint(
             Paint.ANTI_ALIAS_FLAG | Paint.FILTER_BITMAP_FLAG
     );
+    private final Paint scorePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final float density;
     private final float playerBulletSpeedPixelsPerSecond;
     private final float bulletPlayerOverlapPixels;
@@ -114,6 +123,8 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
 
     private String selectedMachineId = "volt_crewzer";
     private String selectedDifficultyId = "normal";
+    private int score;
+    private String scoreLine;
     private String diagnosticLine;
 
     public GameView(Context context) {
@@ -138,6 +149,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
         player = new Player(getResources(), R.drawable.volt_crewzer, density);
 
         initializePaints();
+        updateScoreLine();
         updateDiagnosticLines();
         setFocusable(true);
         setClickable(true);
@@ -160,6 +172,14 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
         infoPaint.setTypeface(Typeface.create("sans-serif-condensed", Typeface.NORMAL));
 
         diagnosticPanelPaint.setColor(diagnosticPanelColor);
+
+        scorePaint.setColor(ContextCompat.getColor(
+                getContext(),
+                R.color.game_debug_text
+        ));
+        scorePaint.setTextSize(20f * getResources().getDisplayMetrics().scaledDensity);
+        scorePaint.setTextAlign(Paint.Align.LEFT);
+        scorePaint.setTypeface(Typeface.create("sans-serif-condensed", Typeface.BOLD));
     }
 
     public void configureGame(String selectedMachine, String selectedDifficulty) {
@@ -176,6 +196,8 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
         enemies.clear();
         enemySpawnCooldownSeconds = ENEMY_FIRST_SPAWN_DELAY_SECONDS;
         releaseEnemyBitmaps();
+        score = 0;
+        updateScoreLine();
 
         int drawableResourceId = getMachineDrawableResource(selectedMachineId);
         Player currentPlayer = player;
@@ -380,6 +402,9 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
 
         updateAutomaticFire(deltaSeconds);
         updatePlayerBullets(deltaSeconds);
+        checkPlayerBulletEnemyCollisions();
+        removeOffScreenEnemies();
+        removeOffScreenPlayerBullets();
     }
 
     private void render() {
@@ -410,79 +435,12 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
                 currentPlayer.draw(canvas);
             }
 
-            drawDiagnostics(canvas);
+            drawHud(canvas);
         } finally {
             if (canvasLocked) {
                 surfaceHolder.unlockCanvasAndPost(canvas);
             }
         }
-    }
-
-    private void drawDiagnostics(Canvas canvas) {
-        if (diagnosticLine == null || diagnosticLine.isEmpty()) {
-            return;
-        }
-
-        float panelLeft = 12f * density;
-        float panelTop = topSystemInsetPixels + 8f * density;
-        float panelPadding = 8f * density;
-        float textLeft = panelLeft + 8f * density;
-        float textBaseline = panelTop + infoPaint.getTextSize() + 6f * density;
-        float panelWidth = infoPaint.measureText(diagnosticLine) + panelPadding * 2f;
-        float panelRight = panelLeft + panelWidth;
-        float panelBottom = textBaseline + 6f * density;
-
-        Player currentPlayer = player;
-        if (currentPlayer != null && currentPlayer.isPrepared()) {
-            float playerLeft = currentPlayer.getCenterX() - currentPlayer.getWidth() / 2f;
-            float playerTop = currentPlayer.getCenterY() - currentPlayer.getHeight() / 2f;
-            float playerRight = currentPlayer.getCenterX() + currentPlayer.getWidth() / 2f;
-            float playerBottom = currentPlayer.getCenterY() + currentPlayer.getHeight() / 2f;
-
-            if (rectanglesOverlap(
-                    panelLeft,
-                    panelTop,
-                    panelRight,
-                    panelBottom,
-                    playerLeft,
-                    playerTop,
-                    playerRight,
-                    playerBottom
-            )) {
-                panelLeft = canvas.getWidth() - panelWidth - 12f * density;
-                panelRight = panelLeft + panelWidth;
-
-                if (rectanglesOverlap(
-                        panelLeft,
-                        panelTop,
-                        panelRight,
-                        panelBottom,
-                        playerLeft,
-                        playerTop,
-                        playerRight,
-                        playerBottom
-                )) {
-                    panelTop = Math.min(
-                            playerBottom + 8f * density,
-                            canvas.getHeight() - (panelBottom - (topSystemInsetPixels + 8f * density))
-                    );
-                    panelBottom = panelTop + (textBaseline - (topSystemInsetPixels + 8f * density));
-                }
-            }
-        }
-
-        textLeft = panelLeft + panelPadding;
-        textBaseline = panelTop + infoPaint.getTextSize() + 6f * density;
-        panelBottom = textBaseline + 6f * density;
-
-        canvas.drawRect(
-                panelLeft,
-                panelTop,
-                panelRight,
-                panelBottom,
-                diagnosticPanelPaint
-        );
-        canvas.drawText(diagnosticLine, textLeft, textBaseline, infoPaint);
     }
 
     private void drawPlayerBullets(Canvas canvas) {
@@ -518,11 +476,14 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
     }
 
     private void updateEnemies(float deltaSeconds) {
-        for (int index = enemies.size() - 1; index >= 0; index--) {
-            Enemy enemy = enemies.get(index);
+        for (Enemy enemy : enemies) {
             enemy.update(deltaSeconds);
+        }
+    }
 
-            if (enemy.isOffScreen(screenHeight)) {
+    private void removeOffScreenEnemies() {
+        for (int index = enemies.size() - 1; index >= 0; index--) {
+            if (enemies.get(index).isOffScreen(screenHeight)) {
                 enemies.remove(index);
             }
         }
@@ -548,6 +509,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
 
         enemies.add(new Enemy(
                 bitmap,
+                enemyType,
                 spawnX,
                 spawnY,
                 verticalSpeed,
@@ -748,6 +710,63 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
         }
     }
 
+    private void checkPlayerBulletEnemyCollisions() {
+        for (int bulletIndex = playerBullets.size() - 1; bulletIndex >= 0; bulletIndex--) {
+            Bullet bullet = playerBullets.get(bulletIndex);
+
+            for (int enemyIndex = enemies.size() - 1; enemyIndex >= 0; enemyIndex--) {
+                Enemy enemy = enemies.get(enemyIndex);
+
+                if (!intersects(bullet, enemy)) {
+                    continue;
+                }
+
+                playerBullets.remove(bulletIndex);
+                enemies.remove(enemyIndex);
+                score += getScoreForEnemy(enemy);
+                updateScoreLine();
+                break;
+            }
+        }
+    }
+
+    private boolean intersects(Bullet bullet, Enemy enemy) {
+        float bulletHorizontalInset = bullet.getWidth() * BULLET_HITBOX_INSET_RATIO;
+        float bulletVerticalInset = bullet.getHeight() * BULLET_HITBOX_INSET_RATIO;
+        float bulletLeft = bullet.getX() + bulletHorizontalInset;
+        float bulletTop = bullet.getY() + bulletVerticalInset;
+        float bulletRight = bullet.getX() + bullet.getWidth() - bulletHorizontalInset;
+        float bulletBottom = bullet.getY() + bullet.getHeight() - bulletVerticalInset;
+
+        float enemyHorizontalInset = enemy.getWidth() * ENEMY_HITBOX_INSET_RATIO;
+        float enemyVerticalInset = enemy.getHeight() * ENEMY_HITBOX_INSET_RATIO;
+        float enemyLeft = enemy.getX() + enemyHorizontalInset;
+        float enemyTop = enemy.getY() + enemyVerticalInset;
+        float enemyRight = enemy.getX() + enemy.getWidth() - enemyHorizontalInset;
+        float enemyBottom = enemy.getY() + enemy.getHeight() - enemyVerticalInset;
+
+        return bulletLeft < enemyRight
+                && bulletRight > enemyLeft
+                && bulletTop < enemyBottom
+                && bulletBottom > enemyTop;
+    }
+
+    private int getScoreForEnemy(Enemy enemy) {
+        switch (enemy.getType()) {
+            case ENEMY_HORNET:
+                return SCORE_HORNET;
+            case ENEMY_HEAVY_BOMBER:
+                return SCORE_HEAVY_BOMBER;
+            case ENEMY_CRAB:
+                return SCORE_CRAB;
+            case ENEMY_ELITE:
+                return SCORE_ELITE;
+            case ENEMY_SCOUT:
+            default:
+                return SCORE_SCOUT;
+        }
+    }
+
     private void updateAutomaticFire(float deltaSeconds) {
         Player currentPlayer = player;
         if (currentPlayer == null
@@ -789,13 +808,117 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
     }
 
     private void updatePlayerBullets(float deltaSeconds) {
-        for (int index = playerBullets.size() - 1; index >= 0; index--) {
-            Bullet bullet = playerBullets.get(index);
+        for (Bullet bullet : playerBullets) {
             bullet.update(deltaSeconds);
+        }
+    }
 
-            if (bullet.isOffScreen()) {
+    private void removeOffScreenPlayerBullets() {
+        for (int index = playerBullets.size() - 1; index >= 0; index--) {
+            if (playerBullets.get(index).isOffScreen()) {
                 playerBullets.remove(index);
             }
+        }
+    }
+
+    private void updateScoreLine() {
+        scoreLine = String.format(Locale.US, "SCORE %06d", score);
+    }
+
+    private void drawHud(Canvas canvas) {
+        if ((scoreLine == null || scoreLine.isEmpty())
+                && (diagnosticLine == null || diagnosticLine.isEmpty())) {
+            return;
+        }
+
+        float panelLeft = 12f * density;
+        float panelTop = topSystemInsetPixels + 8f * density;
+        float panelPadding = 8f * density;
+        float lineSpacing = 4f * density;
+        boolean hasScore = scoreLine != null && !scoreLine.isEmpty();
+        boolean hasDiagnostic = diagnosticLine != null && !diagnosticLine.isEmpty();
+        float contentWidth = 0f;
+        float contentHeight = 0f;
+
+        if (hasScore) {
+            contentWidth = Math.max(contentWidth, scorePaint.measureText(scoreLine));
+            contentHeight += scorePaint.getTextSize();
+        }
+        if (hasDiagnostic) {
+            contentWidth = Math.max(contentWidth, infoPaint.measureText(diagnosticLine));
+            if (contentHeight > 0f) {
+                contentHeight += lineSpacing;
+            }
+            contentHeight += infoPaint.getTextSize();
+        }
+
+        float panelWidth = contentWidth + panelPadding * 2f;
+        float panelHeight = contentHeight + panelPadding * 2f;
+        float panelRight = panelLeft + panelWidth;
+        float panelBottom = panelTop + panelHeight;
+
+        Player currentPlayer = player;
+        if (currentPlayer != null && currentPlayer.isPrepared()) {
+            float playerLeft = currentPlayer.getCenterX() - currentPlayer.getWidth() / 2f;
+            float playerTop = currentPlayer.getCenterY() - currentPlayer.getHeight() / 2f;
+            float playerRight = currentPlayer.getCenterX() + currentPlayer.getWidth() / 2f;
+            float playerBottom = currentPlayer.getCenterY() + currentPlayer.getHeight() / 2f;
+
+            if (rectanglesOverlap(
+                    panelLeft,
+                    panelTop,
+                    panelRight,
+                    panelBottom,
+                    playerLeft,
+                    playerTop,
+                    playerRight,
+                    playerBottom
+            )) {
+                panelLeft = canvas.getWidth() - panelWidth - 12f * density;
+                panelRight = panelLeft + panelWidth;
+
+                if (rectanglesOverlap(
+                        panelLeft,
+                        panelTop,
+                        panelRight,
+                        panelBottom,
+                        playerLeft,
+                        playerTop,
+                        playerRight,
+                        playerBottom
+                )) {
+                    float minimumTop = topSystemInsetPixels + 8f * density;
+                    float maximumTop = canvas.getHeight() - panelHeight - 8f * density;
+                    panelTop = Math.max(minimumTop, Math.min(
+                            playerBottom + 8f * density,
+                            maximumTop
+                    ));
+                    panelBottom = panelTop + panelHeight;
+                }
+            }
+        }
+
+        canvas.drawRect(
+                panelLeft,
+                panelTop,
+                panelRight,
+                panelBottom,
+                diagnosticPanelPaint
+        );
+
+        float textLeft = panelLeft + panelPadding;
+        float textBaseline = panelTop + panelPadding;
+        if (hasScore) {
+            textBaseline += scorePaint.getTextSize();
+            canvas.drawText(scoreLine, textLeft, textBaseline, scorePaint);
+        }
+        if (hasDiagnostic) {
+            if (hasScore) {
+                textBaseline += lineSpacing + infoPaint.getTextSize();
+            } else {
+                textBaseline += infoPaint.getTextSize();
+            }
+            canvas.drawText(diagnosticLine, textLeft, textBaseline, infoPaint);
         }
     }
 

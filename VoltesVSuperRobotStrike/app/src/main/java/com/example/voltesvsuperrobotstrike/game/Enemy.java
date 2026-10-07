@@ -7,6 +7,7 @@ import android.graphics.Paint;
 public final class Enemy {
 
     private final Bitmap bitmap;
+    private final int type;
     private final float width;
     private final float height;
     private final float verticalSpeedPixelsPerSecond;
@@ -18,6 +19,7 @@ public final class Enemy {
 
     public Enemy(
             Bitmap bitmap,
+            int type,
             float x,
             float y,
             float verticalSpeedPixelsPerSecond,
@@ -25,6 +27,7 @@ public final class Enemy {
             float screenWidth
     ) {
         this.bitmap = bitmap;
+        this.type = type;
         width = bitmap.getWidth();
         height = bitmap.getHeight();
         this.x = x;
@@ -70,5 +73,9 @@ public final class Enemy {
 
     public float getHeight() {
         return height;
+    }
+
+    public int getType() {
+        return type;
     }
 }
