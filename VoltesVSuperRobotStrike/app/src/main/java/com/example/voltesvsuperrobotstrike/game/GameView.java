@@ -27,6 +27,17 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
 
     private static final float MAX_DELTA_SECONDS = 0.1f;
     private static final float AUTO_FIRE_INTERVAL_SECONDS = 0.35f;
+    private static final float RAPID_FIRE_DURATION_SECONDS = 8f;
+    private static final float RAPID_FIRE_INTERVAL_MULTIPLIER = 0.55f;
+    private static final float DOUBLE_SCORE_DURATION_SECONDS = 10f;
+    private static final float POWER_UP_DROP_CHANCE = 0.10f;
+    private static final int MAX_ACTIVE_POWER_UPS = 2;
+    private static final float POWER_UP_SPEED_HEIGHT_RATIO = 0.15f;
+    private static final float POWER_UP_WIDTH_RATIO = 0.09f;
+    private static final float POWER_UP_EFFECT_WIDTH_RATIO = 0.14f;
+    private static final float POWER_UP_EFFECT_FRAME_DURATION_SECONDS = 0.09f;
+    private static final int POWER_UP_EFFECT_FRAME_COUNT = 4;
+    private static final int MAX_PLAYER_LIVES = 5;
     private static final float PLAYER_BULLET_SPEED_DP_PER_SECOND = 700f;
     private static final float BULLET_PLAYER_OVERLAP_DP = 2f;
     private static final float BULLET_HITBOX_INSET_RATIO = 0.05f;
@@ -172,6 +183,12 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
     private final Paint enemyPaint = new Paint(
             Paint.ANTI_ALIAS_FLAG | Paint.FILTER_BITMAP_FLAG
     );
+    private final Paint powerUpPaint = new Paint(
+            Paint.ANTI_ALIAS_FLAG | Paint.FILTER_BITMAP_FLAG
+    );
+    private final Paint powerUpEffectPaint = new Paint(
+            Paint.ANTI_ALIAS_FLAG | Paint.FILTER_BITMAP_FLAG
+    );
     private final Paint scorePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final float density;
     private final float playerBulletSpeedPixelsPerSecond;
@@ -182,6 +199,8 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
     private final ArrayList<Bullet> playerBullets = new ArrayList<>();
     private final ArrayList<EnemyBullet> enemyBullets = new ArrayList<>();
     private final ArrayList<Enemy> enemies = new ArrayList<>();
+    private final ArrayList<PowerUp> powerUps = new ArrayList<>();
+    private final ArrayList<PowerUpCollectEffect> powerUpCollectEffects = new ArrayList<>();
     private final Random enemyRandom = new Random();
     private volatile Player player;
 
@@ -221,6 +240,13 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
     private Bitmap eliteEnemyProjectileBitmap;
     private int preparedEnemyProjectileWidth;
     private int preparedEnemyProjectileHeight;
+    private Bitmap shieldPowerUpBitmap;
+    private Bitmap rapidFirePowerUpBitmap;
+    private Bitmap doubleScorePowerUpBitmap;
+    private Bitmap extraLifePowerUpBitmap;
+    private Bitmap powerUpCollectEffectBitmap;
+    private int preparedPowerUpWidth;
+    private int preparedPowerUpHeight;
     private float enemySpawnCooldownSeconds = ENEMY_FIRST_SPAWN_DELAY_SECONDS;
     private float gameplayTimeSeconds;
     private boolean alternatingSpawnFromLeft;
@@ -232,7 +258,14 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
     private int playerLives = INITIAL_PLAYER_LIVES;
     private boolean playerInvulnerable;
     private float playerInvulnerabilityTimerSeconds;
+    private boolean shieldActive;
+    private float rapidFireTimerSeconds;
+    private float doubleScoreTimerSeconds;
     private String livesLine;
+    private String powerUpStatusLine;
+    private int lastRapidFireStatusSeconds = -1;
+    private int lastDoubleScoreStatusSeconds = -1;
+    private boolean lastShieldStatus;
     private String diagnosticLine;
 
     public GameView(Context context) {
@@ -259,6 +292,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
         initializePaints();
         updateScoreLine();
         updateLivesLine();
+        updatePowerUpStatusLine();
         updateDiagnosticLines();
         setFocusable(true);
         setClickable(true);
@@ -301,6 +335,8 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
 
         playerBullets.clear();
         enemyBullets.clear();
+        powerUps.clear();
+        powerUpCollectEffects.clear();
         fireCooldownSeconds = AUTO_FIRE_INTERVAL_SECONDS;
         releaseProjectileBitmap();
         enemies.clear();
@@ -314,7 +350,11 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
         playerLives = INITIAL_PLAYER_LIVES;
         playerInvulnerable = false;
         playerInvulnerabilityTimerSeconds = 0f;
+        shieldActive = false;
+        rapidFireTimerSeconds = 0f;
+        doubleScoreTimerSeconds = 0f;
         updateLivesLine();
+        updatePowerUpStatusLine();
 
         int drawableResourceId = getMachineDrawableResource(selectedMachineId);
         Player currentPlayer = player;
@@ -342,6 +382,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
         prepareProjectileBitmapIfReady();
         prepareEnemyBitmapsIfReady();
         prepareEnemyProjectileBitmapsIfReady();
+        preparePowerUpBitmapsIfReady();
 
         updateDiagnosticLines();
     }
@@ -361,10 +402,13 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
         scrollingBackground.release();
         playerBullets.clear();
         enemyBullets.clear();
+        powerUps.clear();
+        powerUpCollectEffects.clear();
         releaseProjectileBitmap();
         enemies.clear();
         releaseEnemyBitmaps();
         releaseEnemyProjectileBitmaps();
+        releasePowerUpBitmaps();
 
         Player currentPlayer = player;
         if (currentPlayer != null) {
@@ -418,6 +462,8 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
             if (dimensionsChanged) {
                 playerBullets.clear();
                 enemyBullets.clear();
+                powerUps.clear();
+                powerUpCollectEffects.clear();
                 fireCooldownSeconds = AUTO_FIRE_INTERVAL_SECONDS;
                 enemies.clear();
                 enemySpawnCooldownSeconds = ENEMY_FIRST_SPAWN_DELAY_SECONDS;
@@ -425,11 +471,13 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
                 alternatingSpawnFromLeft = false;
                 releaseEnemyBitmaps();
                 releaseEnemyProjectileBitmaps();
+                releasePowerUpBitmaps();
             }
 
             prepareProjectileBitmapIfReady();
             prepareEnemyBitmapsIfReady();
             prepareEnemyProjectileBitmapsIfReady();
+            preparePowerUpBitmapsIfReady();
         }
 
         if (restartGameThread) {
@@ -516,6 +564,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
 
     private void update(float deltaSeconds) {
         updatePlayerInvulnerability(deltaSeconds);
+        updatePowerUpTimers(deltaSeconds);
         scrollingBackground.update(deltaSeconds);
 
         gameplayTimeSeconds += deltaSeconds;
@@ -534,9 +583,14 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
         checkPlayerBulletEnemyCollisions();
         checkPlayerEnemyCollisions();
         resolveEnemyBulletPlayerCollisions();
+        updatePowerUps(deltaSeconds);
+        resolvePlayerPowerUpCollisions();
+        updatePowerUpCollectEffects(deltaSeconds);
         removeOffScreenEnemies();
         removeOffScreenPlayerBullets();
         removeOffScreenEnemyBullets();
+        removeOffScreenPowerUps();
+        removeFinishedPowerUpCollectEffects();
     }
 
     private void render() {
@@ -559,9 +613,11 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
 
             scrollingBackground.draw(canvas);
 
+            drawPowerUps(canvas);
             drawEnemies(canvas);
             drawPlayerBullets(canvas);
             drawEnemyBullets(canvas);
+            drawPowerUpCollectEffects(canvas);
 
             Player currentPlayer = player;
             if (currentPlayer != null && shouldDrawPlayer()) {
@@ -1541,6 +1597,94 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
         preparedEnemyProjectileHeight = 0;
     }
 
+    private void preparePowerUpBitmapsIfReady() {
+        if (screenWidth <= 0 || screenHeight <= 0) {
+            return;
+        }
+
+        if (preparedPowerUpWidth == screenWidth
+                && preparedPowerUpHeight == screenHeight
+                && arePowerUpBitmapsReady()) {
+            return;
+        }
+
+        releasePowerUpBitmaps();
+        shieldPowerUpBitmap = loadScaledPowerUpBitmap(R.drawable.powerup_shield);
+        rapidFirePowerUpBitmap = loadScaledPowerUpBitmap(R.drawable.powerup_rapid_fire);
+        doubleScorePowerUpBitmap = loadScaledPowerUpBitmap(R.drawable.powerup_double_score);
+        extraLifePowerUpBitmap = loadScaledPowerUpBitmap(R.drawable.powerup_extra_life);
+
+        int effectResourceId = getResources().getIdentifier(
+                "effect_powerup_collect",
+                "drawable",
+                getContext().getPackageName()
+        );
+        if (effectResourceId != 0) {
+            powerUpCollectEffectBitmap = BitmapFactory.decodeResource(
+                    getResources(),
+                    effectResourceId
+            );
+        }
+
+        preparedPowerUpWidth = screenWidth;
+        preparedPowerUpHeight = screenHeight;
+    }
+
+    private Bitmap loadScaledPowerUpBitmap(int resourceId) {
+        Bitmap sourceBitmap = BitmapFactory.decodeResource(getResources(), resourceId);
+        if (sourceBitmap == null
+                || sourceBitmap.getWidth() <= 0
+                || sourceBitmap.getHeight() <= 0) {
+            return null;
+        }
+
+        Bitmap croppedBitmap = cropToOpaqueBounds(sourceBitmap);
+        if (croppedBitmap != sourceBitmap) {
+            sourceBitmap.recycle();
+        }
+
+        int targetWidth = Math.max(1, Math.round(screenWidth * POWER_UP_WIDTH_RATIO));
+        int targetHeight = Math.max(
+                1,
+                Math.round(croppedBitmap.getHeight()
+                        * (targetWidth / (float) croppedBitmap.getWidth()))
+        );
+        Bitmap scaledBitmap = Bitmap.createScaledBitmap(
+                croppedBitmap,
+                targetWidth,
+                targetHeight,
+                true
+        );
+
+        if (scaledBitmap != croppedBitmap) {
+            croppedBitmap.recycle();
+        }
+
+        return scaledBitmap;
+    }
+
+    private boolean arePowerUpBitmapsReady() {
+        return shieldPowerUpBitmap != null
+                && rapidFirePowerUpBitmap != null
+                && doubleScorePowerUpBitmap != null
+                && extraLifePowerUpBitmap != null;
+    }
+
+    private void releasePowerUpBitmaps() {
+        releaseBitmap(shieldPowerUpBitmap);
+        releaseBitmap(rapidFirePowerUpBitmap);
+        releaseBitmap(doubleScorePowerUpBitmap);
+        releaseBitmap(extraLifePowerUpBitmap);
+        releaseBitmap(powerUpCollectEffectBitmap);
+        shieldPowerUpBitmap = null;
+        rapidFirePowerUpBitmap = null;
+        doubleScorePowerUpBitmap = null;
+        extraLifePowerUpBitmap = null;
+        powerUpCollectEffectBitmap = null;
+        preparedPowerUpWidth = 0;
+        preparedPowerUpHeight = 0;
+    }
+
     private void releaseBitmap(Bitmap bitmap) {
         if (bitmap != null && !bitmap.isRecycled()) {
             bitmap.recycle();
@@ -1558,11 +1702,180 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
                     continue;
                 }
 
+                float enemyCenterX = enemy.getCenterX();
+                float enemyCenterY = enemy.getY() + enemy.getHeight() / 2f;
                 playerBullets.remove(bulletIndex);
                 enemies.remove(enemyIndex);
-                score += getScoreForEnemy(enemy);
+                int enemyScore = getScoreForEnemy(enemy);
+                score += doubleScoreTimerSeconds > 0f
+                        ? enemyScore * 2
+                        : enemyScore;
                 updateScoreLine();
+                spawnPowerUp(enemyCenterX, enemyCenterY);
                 break;
+            }
+        }
+    }
+
+    private void spawnPowerUp(float centerX, float centerY) {
+        if (powerUps.size() >= MAX_ACTIVE_POWER_UPS
+                || !arePowerUpBitmapsReady()
+                || enemyRandom.nextFloat() >= POWER_UP_DROP_CHANCE) {
+            return;
+        }
+
+        PowerUpType type = selectPowerUpType();
+        Bitmap bitmap = getPowerUpBitmap(type);
+        if (bitmap == null) {
+            return;
+        }
+
+        float x = Math.max(
+                0f,
+                Math.min(screenWidth - bitmap.getWidth(), centerX - bitmap.getWidth() / 2f)
+        );
+        float y = Math.max(0f, centerY - bitmap.getHeight() / 2f);
+        powerUps.add(new PowerUp(
+                type,
+                bitmap,
+                x,
+                y,
+                screenHeight * POWER_UP_SPEED_HEIGHT_RATIO
+        ));
+    }
+
+    private PowerUpType selectPowerUpType() {
+        int roll = enemyRandom.nextInt(100);
+        if (roll < 30) {
+            return PowerUpType.SHIELD;
+        }
+        if (roll < 60) {
+            return PowerUpType.RAPID_FIRE;
+        }
+        if (roll < 85) {
+            return PowerUpType.DOUBLE_SCORE;
+        }
+        return PowerUpType.EXTRA_LIFE;
+    }
+
+    private Bitmap getPowerUpBitmap(PowerUpType type) {
+        switch (type) {
+            case SHIELD:
+                return shieldPowerUpBitmap;
+            case RAPID_FIRE:
+                return rapidFirePowerUpBitmap;
+            case DOUBLE_SCORE:
+                return doubleScorePowerUpBitmap;
+            case EXTRA_LIFE:
+                return extraLifePowerUpBitmap;
+            default:
+                return null;
+        }
+    }
+
+    private void updatePowerUpTimers(float deltaSeconds) {
+        if (rapidFireTimerSeconds > 0f) {
+            rapidFireTimerSeconds = Math.max(0f, rapidFireTimerSeconds - deltaSeconds);
+        }
+        if (doubleScoreTimerSeconds > 0f) {
+            doubleScoreTimerSeconds = Math.max(0f, doubleScoreTimerSeconds - deltaSeconds);
+        }
+        updatePowerUpStatusLine();
+    }
+
+    private void updatePowerUps(float deltaSeconds) {
+        for (PowerUp powerUp : powerUps) {
+            powerUp.update(deltaSeconds);
+        }
+    }
+
+    private void resolvePlayerPowerUpCollisions() {
+        Player currentPlayer = player;
+        if (currentPlayer == null || !currentPlayer.isPrepared()) {
+            return;
+        }
+
+        for (int index = powerUps.size() - 1; index >= 0; index--) {
+            PowerUp powerUp = powerUps.get(index);
+            if (!intersectsPlayerAndPowerUp(currentPlayer, powerUp)) {
+                continue;
+            }
+
+            powerUps.remove(index);
+            applyPowerUp(powerUp);
+        }
+    }
+
+    private void applyPowerUp(PowerUp powerUp) {
+        switch (powerUp.getType()) {
+            case SHIELD:
+                shieldActive = true;
+                break;
+            case RAPID_FIRE:
+                rapidFireTimerSeconds = RAPID_FIRE_DURATION_SECONDS;
+                break;
+            case DOUBLE_SCORE:
+                doubleScoreTimerSeconds = DOUBLE_SCORE_DURATION_SECONDS;
+                break;
+            case EXTRA_LIFE:
+                playerLives = Math.min(MAX_PLAYER_LIVES, playerLives + 1);
+                updateLivesLine();
+                break;
+            default:
+                return;
+        }
+
+        updatePowerUpStatusLine();
+        addPowerUpCollectEffect(powerUp.getCenterX(), powerUp.getCenterY());
+    }
+
+    private void addPowerUpCollectEffect(float centerX, float centerY) {
+        if (powerUpCollectEffectBitmap == null) {
+            return;
+        }
+
+        float effectSize = screenWidth * POWER_UP_EFFECT_WIDTH_RATIO;
+        powerUpCollectEffects.add(new PowerUpCollectEffect(
+                powerUpCollectEffectBitmap,
+                POWER_UP_EFFECT_FRAME_COUNT,
+                centerX,
+                centerY,
+                effectSize,
+                effectSize,
+                POWER_UP_EFFECT_FRAME_DURATION_SECONDS
+        ));
+    }
+
+    private void updatePowerUpCollectEffects(float deltaSeconds) {
+        for (PowerUpCollectEffect effect : powerUpCollectEffects) {
+            effect.update(deltaSeconds);
+        }
+    }
+
+    private void drawPowerUps(Canvas canvas) {
+        for (PowerUp powerUp : powerUps) {
+            powerUp.draw(canvas, powerUpPaint);
+        }
+    }
+
+    private void drawPowerUpCollectEffects(Canvas canvas) {
+        for (PowerUpCollectEffect effect : powerUpCollectEffects) {
+            effect.draw(canvas, powerUpEffectPaint);
+        }
+    }
+
+    private void removeOffScreenPowerUps() {
+        for (int index = powerUps.size() - 1; index >= 0; index--) {
+            if (powerUps.get(index).isOffScreen(screenHeight)) {
+                powerUps.remove(index);
+            }
+        }
+    }
+
+    private void removeFinishedPowerUpCollectEffects() {
+        for (int index = powerUpCollectEffects.size() - 1; index >= 0; index--) {
+            if (powerUpCollectEffects.get(index).isFinished()) {
+                powerUpCollectEffects.remove(index);
             }
         }
     }
@@ -1594,6 +1907,12 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
 
     private void damagePlayer() {
         if (playerLives <= 0 || playerInvulnerable) {
+            return;
+        }
+
+        if (shieldActive) {
+            shieldActive = false;
+            updatePowerUpStatusLine();
             return;
         }
 
@@ -1640,6 +1959,19 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
                 enemyTop,
                 enemyRight,
                 enemyBottom
+        );
+    }
+
+    private boolean intersectsPlayerAndPowerUp(
+            Player currentPlayer,
+            PowerUp powerUp
+    ) {
+        return intersectsPlayerBounds(
+                currentPlayer,
+                powerUp.getX(),
+                powerUp.getY(),
+                powerUp.getX() + powerUp.getWidth(),
+                powerUp.getY() + powerUp.getHeight()
         );
     }
 
@@ -1754,7 +2086,13 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
         }
 
         firePlayerProjectile();
-        fireCooldownSeconds = AUTO_FIRE_INTERVAL_SECONDS;
+        fireCooldownSeconds = getCurrentPlayerFireIntervalSeconds();
+    }
+
+    private float getCurrentPlayerFireIntervalSeconds() {
+        return rapidFireTimerSeconds > 0f
+                ? AUTO_FIRE_INTERVAL_SECONDS * RAPID_FIRE_INTERVAL_MULTIPLIER
+                : AUTO_FIRE_INTERVAL_SECONDS;
     }
 
     private void firePlayerProjectile() {
@@ -1835,9 +2173,51 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
         livesLine = String.format(Locale.US, "LIVES %d", playerLives);
     }
 
+    private void updatePowerUpStatusLine() {
+        int rapidFireSeconds = rapidFireTimerSeconds > 0f
+                ? (int) Math.ceil(rapidFireTimerSeconds)
+                : 0;
+        int doubleScoreSeconds = doubleScoreTimerSeconds > 0f
+                ? (int) Math.ceil(doubleScoreTimerSeconds)
+                : 0;
+        if (rapidFireSeconds == lastRapidFireStatusSeconds
+                && doubleScoreSeconds == lastDoubleScoreStatusSeconds
+                && shieldActive == lastShieldStatus) {
+            return;
+        }
+
+        lastRapidFireStatusSeconds = rapidFireSeconds;
+        lastDoubleScoreStatusSeconds = doubleScoreSeconds;
+        lastShieldStatus = shieldActive;
+
+        StringBuilder status = new StringBuilder();
+        if (shieldActive) {
+            status.append("SHIELD");
+        }
+        if (rapidFireSeconds > 0) {
+            appendPowerUpStatus(status, "RAPID ", rapidFireSeconds);
+        }
+        if (doubleScoreSeconds > 0) {
+            appendPowerUpStatus(status, "2X SCORE ", doubleScoreSeconds);
+        }
+        powerUpStatusLine = status.toString();
+    }
+
+    private void appendPowerUpStatus(
+            StringBuilder status,
+            String label,
+            int seconds
+    ) {
+        if (status.length() > 0) {
+            status.append(" | ");
+        }
+        status.append(label).append(seconds).append('s');
+    }
+
     private void drawHud(Canvas canvas) {
         if ((scoreLine == null || scoreLine.isEmpty())
                 && (livesLine == null || livesLine.isEmpty())
+                && (powerUpStatusLine == null || powerUpStatusLine.isEmpty())
                 && (diagnosticLine == null || diagnosticLine.isEmpty())) {
             return;
         }
@@ -1848,6 +2228,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
         float lineSpacing = 4f * density;
         boolean hasScore = scoreLine != null && !scoreLine.isEmpty();
         boolean hasLives = livesLine != null && !livesLine.isEmpty();
+        boolean hasPowerUpStatus = powerUpStatusLine != null && !powerUpStatusLine.isEmpty();
         boolean hasDiagnostic = diagnosticLine != null && !diagnosticLine.isEmpty();
         float contentWidth = 0f;
         float contentHeight = 0f;
@@ -1865,6 +2246,13 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
         }
         if (hasDiagnostic) {
             contentWidth = Math.max(contentWidth, infoPaint.measureText(diagnosticLine));
+            if (contentHeight > 0f) {
+                contentHeight += lineSpacing;
+            }
+            contentHeight += infoPaint.getTextSize();
+        }
+        if (hasPowerUpStatus) {
+            contentWidth = Math.max(contentWidth, infoPaint.measureText(powerUpStatusLine));
             if (contentHeight > 0f) {
                 contentHeight += lineSpacing;
             }
@@ -1946,6 +2334,14 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
                 textBaseline += infoPaint.getTextSize();
             }
             canvas.drawText(diagnosticLine, textLeft, textBaseline, infoPaint);
+        }
+        if (hasPowerUpStatus) {
+            if (hasScore || hasLives || hasDiagnostic) {
+                textBaseline += lineSpacing + infoPaint.getTextSize();
+            } else {
+                textBaseline += infoPaint.getTextSize();
+            }
+            canvas.drawText(powerUpStatusLine, textLeft, textBaseline, infoPaint);
         }
     }
 
