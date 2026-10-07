@@ -1,13 +1,9 @@
 package com.example.voltesvsuperrobotstrike.activities;
 
 import android.os.Bundle;
-import android.view.View;
 
 import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.graphics.Insets;
-import androidx.core.view.ViewCompat;
-import androidx.core.view.WindowInsetsCompat;
 
 import com.example.voltesvsuperrobotstrike.R;
 import com.example.voltesvsuperrobotstrike.game.GameView;
@@ -39,8 +35,6 @@ public class GameActivity extends AppCompatActivity {
 
         gameView = findViewById(R.id.gameView);
         gameView.configureGame(selectedMachineId, selectedDifficultyId);
-
-        applySystemBarInsets();
     }
 
     @Override
@@ -84,21 +78,4 @@ public class GameActivity extends AppCompatActivity {
                 || DifficultyActivity.DIFFICULTY_HARD.equals(difficultyId);
     }
 
-    private void applySystemBarInsets() {
-        View rootView = findViewById(R.id.game_root);
-
-        ViewCompat.setOnApplyWindowInsetsListener(rootView, (view, insets) -> {
-            Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
-            int basePadding = getResources().getDimensionPixelSize(R.dimen.screen_padding);
-
-            view.setPadding(
-                    basePadding + systemBars.left,
-                    basePadding + systemBars.top,
-                    basePadding + systemBars.right,
-                    basePadding + systemBars.bottom
-            );
-
-            return insets;
-        });
-    }
 }
