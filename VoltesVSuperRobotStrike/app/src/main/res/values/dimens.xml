@@ -3,9 +3,10 @@
     <dimen name="content_spacing">16dp</dimen>
     <dimen name="button_min_height">48dp</dimen>
     <dimen name="main_menu_panel_padding">16dp</dimen>
-    <dimen name="main_menu_button_height">52dp</dimen>
-    <dimen name="main_menu_button_spacing">8dp</dimen>
-    <dimen name="main_menu_corner_radius">10dp</dimen>
+    <dimen name="main_menu_primary_button_height">64dp</dimen>
+    <dimen name="main_menu_secondary_button_height">60dp</dimen>
+    <dimen name="main_menu_button_spacing">9dp</dimen>
+    <dimen name="main_menu_corner_radius">6dp</dimen>
     <dimen name="machine_selection_header_height">56dp</dimen>
     <dimen name="machine_selection_content_spacing">8dp</dimen>
     <dimen name="machine_card_spacing">8dp</dimen>
