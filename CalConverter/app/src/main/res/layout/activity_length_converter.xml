@@ -1,0 +1,231 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/mt_bg"
+    android:fitsSystemWindows="true"
+    android:orientation="vertical"
+    android:paddingStart="16dp"
+    android:paddingTop="12dp"
+    android:paddingEnd="16dp"
+    android:paddingBottom="16dp">
+
+    <TextView
+        style="@style/mt_title"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/app_title" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="14dp"
+        android:background="@drawable/mt_bg_tab_bar"
+        android:orientation="horizontal"
+        android:padding="6dp">
+        <LinearLayout
+            android:id="@+id/tabCalc"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:background="@drawable/mt_tab_normal"
+            android:clickable="true"
+            android:focusable="true"
+            android:gravity="center"
+            android:orientation="vertical"
+            android:paddingTop="8dp"
+            android:paddingBottom="8dp">
+            <ImageView
+                android:id="@+id/ivTabCalc"
+                android:layout_width="22dp"
+                android:layout_height="22dp"
+                android:contentDescription="@string/tab_calculator"
+                android:src="@drawable/mt_ic_calculator" />
+            <TextView
+                android:id="@+id/labelTabCalc"
+                style="@style/mt_tab_label"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:maxLines="1"
+                android:text="@string/tab_calculator"
+                android:textSize="10sp" />
+        </LinearLayout>
+        <LinearLayout
+            android:id="@+id/tabLength"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:background="@drawable/mt_tab_selected"
+            android:clickable="true"
+            android:focusable="true"
+            android:gravity="center"
+            android:orientation="vertical"
+            android:paddingTop="8dp"
+            android:paddingBottom="8dp">
+            <ImageView
+                android:id="@+id/ivTabLength"
+                android:layout_width="22dp"
+                android:layout_height="22dp"
+                android:contentDescription="@string/tab_length"
+                android:src="@drawable/mt_ic_ruler" />
+            <TextView
+                android:id="@+id/labelTabLength"
+                style="@style/mt_tab_label"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:maxLines="1"
+                android:text="@string/tab_length"
+                android:textSize="10sp" />
+        </LinearLayout>
+        <LinearLayout
+            android:id="@+id/tabWeight"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:background="@drawable/mt_tab_normal"
+            android:clickable="true"
+            android:focusable="true"
+            android:gravity="center"
+            android:orientation="vertical"
+            android:paddingTop="8dp"
+            android:paddingBottom="8dp">
+            <ImageView
+                android:id="@+id/ivTabWeight"
+                android:layout_width="22dp"
+                android:layout_height="22dp"
+                android:contentDescription="@string/tab_weight"
+                android:src="@drawable/mt_ic_weight" />
+            <TextView
+                android:id="@+id/labelTabWeight"
+                style="@style/mt_tab_label"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:maxLines="1"
+                android:text="@string/tab_weight"
+                android:textSize="10sp" />
+        </LinearLayout>
+        <LinearLayout
+            android:id="@+id/tabTemperature"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:background="@drawable/mt_tab_normal"
+            android:clickable="true"
+            android:focusable="true"
+            android:gravity="center"
+            android:orientation="vertical"
+            android:paddingTop="8dp"
+            android:paddingBottom="8dp">
+            <ImageView
+                android:id="@+id/ivTabTemperature"
+                android:layout_width="22dp"
+                android:layout_height="22dp"
+                android:contentDescription="@string/tab_temperature"
+                android:src="@drawable/mt_ic_temperature" />
+            <TextView
+                android:id="@+id/labelTabTemperature"
+                style="@style/mt_tab_label"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:maxLines="1"
+                android:text="@string/tab_temperature"
+                android:textSize="10sp" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <ScrollView
+        android:id="@+id/lengthPage"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_marginTop="16dp"
+        android:layout_weight="1"
+        android:fillViewport="true">
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingTop="8dp">
+                <ImageView
+                    android:layout_width="44dp"
+                    android:layout_height="44dp"
+                    android:importantForAccessibility="no"
+                    android:src="@drawable/mt_ic_ruler" />
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="12dp"
+                    android:orientation="vertical">
+                    <TextView
+                        style="@style/mt_section_title"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/title_length_converter" />
+                    <TextView
+                        style="@style/mt_subtitle"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/subtitle_length_converter" />
+                </LinearLayout>
+            </LinearLayout>
+            <TextView
+                style="@style/mt_label"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/label_from" />
+            <Spinner
+                android:id="@+id/spLengthFrom"
+                style="@style/mt_spinner"
+                android:layout_width="match_parent"
+                android:layout_height="52dp" />
+            <EditText
+                android:id="@+id/etLengthInput"
+                style="@style/mt_input"
+                android:layout_width="match_parent"
+                android:layout_height="52dp"
+                android:layout_marginTop="10dp"
+                android:hint="@string/hint_enter_value"
+                android:importantForAutofill="no"
+                android:inputType="numberDecimal" />
+            <ImageView
+                android:id="@+id/btnLengthSwap"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:layout_gravity="center_horizontal"
+                android:layout_marginTop="14dp"
+                android:clickable="true"
+                android:contentDescription="@string/content_description_swap"
+                android:focusable="true"
+                android:padding="6dp"
+                android:src="@drawable/mt_ic_swap" />
+            <TextView
+                style="@style/mt_label"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/label_to" />
+            <Spinner
+                android:id="@+id/spLengthTo"
+                style="@style/mt_spinner"
+                android:layout_width="match_parent"
+                android:layout_height="52dp" />
+            <TextView
+                android:id="@+id/tvLengthResult"
+                style="@style/mt_input"
+                android:layout_width="match_parent"
+                android:layout_height="52dp"
+                android:layout_marginTop="10dp"
+                android:hint="@string/hint_result" />
+            <TextView
+                android:id="@+id/btnLengthConvert"
+                style="@style/mt_convert_button"
+                android:layout_width="match_parent"
+                android:layout_height="56dp"
+                android:layout_marginTop="28dp"
+                android:text="@string/btn_convert" />
+        </LinearLayout>
+    </ScrollView>
+</LinearLayout>

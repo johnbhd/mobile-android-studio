@@ -16,7 +16,6 @@
         android:layout_height="wrap_content"
         android:text="@string/app_title" />
 
-    <!-- Four tabs shown in Workflows/uicalcon.jpg -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -37,14 +36,12 @@
             android:orientation="vertical"
             android:paddingTop="8dp"
             android:paddingBottom="8dp">
-
             <ImageView
                 android:id="@+id/ivTabCalc"
                 android:layout_width="22dp"
                 android:layout_height="22dp"
                 android:contentDescription="@string/tab_calculator"
                 android:src="@drawable/mt_ic_calculator" />
-
             <TextView
                 android:id="@+id/labelTabCalc"
                 style="@style/mt_tab_label"
@@ -67,14 +64,12 @@
             android:orientation="vertical"
             android:paddingTop="8dp"
             android:paddingBottom="8dp">
-
             <ImageView
                 android:id="@+id/ivTabLength"
                 android:layout_width="22dp"
                 android:layout_height="22dp"
                 android:contentDescription="@string/tab_length"
                 android:src="@drawable/mt_ic_ruler" />
-
             <TextView
                 android:id="@+id/labelTabLength"
                 style="@style/mt_tab_label"
@@ -97,14 +92,12 @@
             android:orientation="vertical"
             android:paddingTop="8dp"
             android:paddingBottom="8dp">
-
             <ImageView
                 android:id="@+id/ivTabWeight"
                 android:layout_width="22dp"
                 android:layout_height="22dp"
                 android:contentDescription="@string/tab_weight"
                 android:src="@drawable/mt_ic_weight" />
-
             <TextView
                 android:id="@+id/labelTabWeight"
                 style="@style/mt_tab_label"
@@ -127,14 +120,12 @@
             android:orientation="vertical"
             android:paddingTop="8dp"
             android:paddingBottom="8dp">
-
             <ImageView
                 android:id="@+id/ivTabTemperature"
                 android:layout_width="22dp"
                 android:layout_height="22dp"
                 android:contentDescription="@string/tab_temperature"
                 android:src="@drawable/mt_ic_temperature" />
-
             <TextView
                 android:id="@+id/labelTabTemperature"
                 style="@style/mt_tab_label"
@@ -146,525 +137,210 @@
         </LinearLayout>
     </LinearLayout>
 
-    <FrameLayout
+    <LinearLayout
+        android:id="@+id/calcLayout"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_marginTop="16dp"
-        android:layout_weight="1">
+        android:layout_weight="1"
+        android:orientation="vertical">
 
-        <!-- Calculator page -->
         <LinearLayout
-            android:id="@+id/calcLayout"
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@drawable/mt_bg_surface"
+            android:orientation="vertical"
+            android:padding="20dp">
+            <TextView
+                android:id="@+id/tvExpression"
+                style="@style/mt_expression"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content" />
+            <TextView
+                android:id="@+id/tvResult"
+                style="@style/mt_result"
+                android:layout_width="match_parent"
+                android:layout_height="80dp"
+                android:text="0" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/calcKeys"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_marginTop="12dp"
+            android:layout_weight="1"
             android:orientation="vertical">
 
             <LinearLayout
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:background="@drawable/mt_bg_surface"
-                android:orientation="vertical"
-                android:padding="20dp">
-
+                android:layout_height="0dp"
+                android:layout_weight="1"
+                android:orientation="horizontal">
                 <TextView
-                    android:id="@+id/tvExpression"
-                    style="@style/mt_expression"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content" />
-
+                    style="@style/mt_key_num"
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_margin="5dp"
+                    android:layout_weight="1"
+                    android:text="AC"
+                    android:textSize="22sp" />
                 <TextView
-                    android:id="@+id/tvResult"
-                    style="@style/mt_result"
-                    android:layout_width="match_parent"
-                    android:layout_height="80dp"
-                    android:text="0" />
+                    style="@style/mt_key_num"
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_margin="5dp"
+                    android:layout_weight="1"
+                    android:text="+/-"
+                    android:textSize="22sp" />
+                <TextView
+                    style="@style/mt_key_num"
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_margin="5dp"
+                    android:layout_weight="1"
+                    android:text="%" />
+                <TextView
+                    style="@style/mt_key_op"
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_margin="5dp"
+                    android:layout_weight="1"
+                    android:text="&#247;" />
             </LinearLayout>
 
             <LinearLayout
-                android:id="@+id/calcKeys"
                 android:layout_width="match_parent"
                 android:layout_height="0dp"
-                android:layout_marginTop="12dp"
                 android:layout_weight="1"
-                android:orientation="vertical">
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="0dp"
+                android:orientation="horizontal">
+                <TextView
+                    style="@style/mt_key_num"
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_margin="5dp"
                     android:layout_weight="1"
-                    android:orientation="horizontal">
-
-                    <TextView
-                        style="@style/mt_key_num"
-                        android:layout_width="0dp"
-                        android:layout_height="match_parent"
-                        android:layout_margin="5dp"
-                        android:layout_weight="1"
-                        android:text="AC"
-                        android:textSize="22sp" />
-
-                    <TextView
-                        style="@style/mt_key_num"
-                        android:layout_width="0dp"
-                        android:layout_height="match_parent"
-                        android:layout_margin="5dp"
-                        android:layout_weight="1"
-                        android:text="+/-"
-                        android:textSize="22sp" />
-
-                    <TextView
-                        style="@style/mt_key_num"
-                        android:layout_width="0dp"
-                        android:layout_height="match_parent"
-                        android:layout_margin="5dp"
-                        android:layout_weight="1"
-                        android:text="%"
-                        android:textSize="22sp" />
-
-                    <TextView
-                        style="@style/mt_key_op"
-                        android:layout_width="0dp"
-                        android:layout_height="match_parent"
-                        android:layout_margin="5dp"
-                        android:layout_weight="1"
-                        android:text="&#247;" />
-                </LinearLayout>
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="0dp"
+                    android:text="7" />
+                <TextView
+                    style="@style/mt_key_num"
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_margin="5dp"
                     android:layout_weight="1"
-                    android:orientation="horizontal">
-
-                    <TextView
-                        style="@style/mt_key_num"
-                        android:layout_width="0dp"
-                        android:layout_height="match_parent"
-                        android:layout_margin="5dp"
-                        android:layout_weight="1"
-                        android:text="7" />
-                    <TextView
-                        style="@style/mt_key_num"
-                        android:layout_width="0dp"
-                        android:layout_height="match_parent"
-                        android:layout_margin="5dp"
-                        android:layout_weight="1"
-                        android:text="8" />
-                    <TextView
-                        style="@style/mt_key_num"
-                        android:layout_width="0dp"
-                        android:layout_height="match_parent"
-                        android:layout_margin="5dp"
-                        android:layout_weight="1"
-                        android:text="9" />
-                    <TextView
-                        style="@style/mt_key_op"
-                        android:layout_width="0dp"
-                        android:layout_height="match_parent"
-                        android:layout_margin="5dp"
-                        android:layout_weight="1"
-                        android:text="&#215;" />
-                </LinearLayout>
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="0dp"
+                    android:text="8" />
+                <TextView
+                    style="@style/mt_key_num"
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_margin="5dp"
                     android:layout_weight="1"
-                    android:orientation="horizontal">
-
-                    <TextView
-                        style="@style/mt_key_num"
-                        android:layout_width="0dp"
-                        android:layout_height="match_parent"
-                        android:layout_margin="5dp"
-                        android:layout_weight="1"
-                        android:text="4" />
-                    <TextView
-                        style="@style/mt_key_num"
-                        android:layout_width="0dp"
-                        android:layout_height="match_parent"
-                        android:layout_margin="5dp"
-                        android:layout_weight="1"
-                        android:text="5" />
-                    <TextView
-                        style="@style/mt_key_num"
-                        android:layout_width="0dp"
-                        android:layout_height="match_parent"
-                        android:layout_margin="5dp"
-                        android:layout_weight="1"
-                        android:text="6" />
-                    <TextView
-                        style="@style/mt_key_op"
-                        android:layout_width="0dp"
-                        android:layout_height="match_parent"
-                        android:layout_margin="5dp"
-                        android:layout_weight="1"
-                        android:text="&#8722;" />
-                </LinearLayout>
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="0dp"
+                    android:text="9" />
+                <TextView
+                    style="@style/mt_key_op"
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_margin="5dp"
                     android:layout_weight="1"
-                    android:orientation="horizontal">
+                    android:text="&#215;" />
+            </LinearLayout>
 
-                    <TextView
-                        style="@style/mt_key_num"
-                        android:layout_width="0dp"
-                        android:layout_height="match_parent"
-                        android:layout_margin="5dp"
-                        android:layout_weight="1"
-                        android:text="1" />
-                    <TextView
-                        style="@style/mt_key_num"
-                        android:layout_width="0dp"
-                        android:layout_height="match_parent"
-                        android:layout_margin="5dp"
-                        android:layout_weight="1"
-                        android:text="2" />
-                    <TextView
-                        style="@style/mt_key_num"
-                        android:layout_width="0dp"
-                        android:layout_height="match_parent"
-                        android:layout_margin="5dp"
-                        android:layout_weight="1"
-                        android:text="3" />
-                    <TextView
-                        style="@style/mt_key_op"
-                        android:layout_width="0dp"
-                        android:layout_height="match_parent"
-                        android:layout_margin="5dp"
-                        android:layout_weight="1"
-                        android:text="+" />
-                </LinearLayout>
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="0dp"
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1"
+                android:orientation="horizontal">
+                <TextView
+                    style="@style/mt_key_num"
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_margin="5dp"
                     android:layout_weight="1"
-                    android:orientation="horizontal">
+                    android:text="4" />
+                <TextView
+                    style="@style/mt_key_num"
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_margin="5dp"
+                    android:layout_weight="1"
+                    android:text="5" />
+                <TextView
+                    style="@style/mt_key_num"
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_margin="5dp"
+                    android:layout_weight="1"
+                    android:text="6" />
+                <TextView
+                    style="@style/mt_key_op"
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_margin="5dp"
+                    android:layout_weight="1"
+                    android:text="&#8722;" />
+            </LinearLayout>
 
-                    <TextView
-                        style="@style/mt_key_num"
-                        android:layout_width="0dp"
-                        android:layout_height="match_parent"
-                        android:layout_margin="5dp"
-                        android:layout_weight="2"
-                        android:text="0" />
-                    <TextView
-                        style="@style/mt_key_num"
-                        android:layout_width="0dp"
-                        android:layout_height="match_parent"
-                        android:layout_margin="5dp"
-                        android:layout_weight="1"
-                        android:text="." />
-                    <TextView
-                        style="@style/mt_key_op"
-                        android:layout_width="0dp"
-                        android:layout_height="match_parent"
-                        android:layout_margin="5dp"
-                        android:layout_weight="1"
-                        android:text="=" />
-                </LinearLayout>
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1"
+                android:orientation="horizontal">
+                <TextView
+                    style="@style/mt_key_num"
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_margin="5dp"
+                    android:layout_weight="1"
+                    android:text="1" />
+                <TextView
+                    style="@style/mt_key_num"
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_margin="5dp"
+                    android:layout_weight="1"
+                    android:text="2" />
+                <TextView
+                    style="@style/mt_key_num"
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_margin="5dp"
+                    android:layout_weight="1"
+                    android:text="3" />
+                <TextView
+                    style="@style/mt_key_op"
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_margin="5dp"
+                    android:layout_weight="1"
+                    android:text="+" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1"
+                android:orientation="horizontal">
+                <TextView
+                    style="@style/mt_key_num"
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_margin="5dp"
+                    android:layout_weight="2"
+                    android:text="0" />
+                <TextView
+                    style="@style/mt_key_num"
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_margin="5dp"
+                    android:layout_weight="1"
+                    android:text="." />
+                <TextView
+                    style="@style/mt_key_op"
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_margin="5dp"
+                    android:layout_weight="1"
+                    android:text="=" />
             </LinearLayout>
         </LinearLayout>
-
-        <!-- Length converter page -->
-        <ScrollView
-            android:id="@+id/lengthLayout"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:fillViewport="true"
-            android:visibility="gone">
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical">
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal"
-                    android:paddingTop="8dp">
-
-                    <ImageView
-                        android:layout_width="44dp"
-                        android:layout_height="44dp"
-                        android:importantForAccessibility="no"
-                        android:src="@drawable/mt_ic_ruler" />
-                    <LinearLayout
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="12dp"
-                        android:orientation="vertical">
-                        <TextView
-                            style="@style/mt_section_title"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="@string/title_length_converter" />
-                        <TextView
-                            style="@style/mt_subtitle"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="@string/subtitle_length_converter" />
-                    </LinearLayout>
-                </LinearLayout>
-
-                <TextView
-                    style="@style/mt_label"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/label_from" />
-                <Spinner
-                    android:id="@+id/spLengthFrom"
-                    style="@style/mt_spinner"
-                    android:layout_width="match_parent"
-                    android:layout_height="52dp" />
-                <EditText
-                    android:id="@+id/etLengthInput"
-                    style="@style/mt_input"
-                    android:layout_width="match_parent"
-                    android:layout_height="52dp"
-                    android:layout_marginTop="10dp"
-                    android:hint="@string/hint_enter_value"
-                    android:importantForAutofill="no"
-                    android:inputType="numberDecimal" />
-                <ImageView
-                    android:id="@+id/btnLengthSwap"
-                    android:layout_width="40dp"
-                    android:layout_height="40dp"
-                    android:layout_gravity="center_horizontal"
-                    android:layout_marginTop="14dp"
-                    android:clickable="true"
-                    android:contentDescription="@string/content_description_swap"
-                    android:focusable="true"
-                    android:padding="6dp"
-                    android:src="@drawable/mt_ic_swap" />
-                <TextView
-                    style="@style/mt_label"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/label_to" />
-                <Spinner
-                    android:id="@+id/spLengthTo"
-                    style="@style/mt_spinner"
-                    android:layout_width="match_parent"
-                    android:layout_height="52dp" />
-                <TextView
-                    android:id="@+id/tvLengthResult"
-                    style="@style/mt_input"
-                    android:layout_width="match_parent"
-                    android:layout_height="52dp"
-                    android:layout_marginTop="10dp"
-                    android:hint="@string/hint_result" />
-                <TextView
-                    android:id="@+id/btnLengthConvert"
-                    style="@style/mt_convert_button"
-                    android:layout_width="match_parent"
-                    android:layout_height="56dp"
-                    android:layout_marginTop="28dp"
-                    android:text="@string/btn_convert" />
-            </LinearLayout>
-        </ScrollView>
-
-        <!-- Weight converter page -->
-        <ScrollView
-            android:id="@+id/weightLayout"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:fillViewport="true"
-            android:visibility="gone">
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical">
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal"
-                    android:paddingTop="8dp">
-                    <ImageView
-                        android:layout_width="44dp"
-                        android:layout_height="44dp"
-                        android:importantForAccessibility="no"
-                        android:src="@drawable/mt_ic_weight" />
-                    <LinearLayout
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="12dp"
-                        android:orientation="vertical">
-                        <TextView
-                            style="@style/mt_section_title"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="@string/title_weight_converter" />
-                        <TextView
-                            style="@style/mt_subtitle"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="@string/subtitle_weight_converter" />
-                    </LinearLayout>
-                </LinearLayout>
-
-                <TextView
-                    style="@style/mt_label"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/label_from" />
-                <Spinner
-                    android:id="@+id/spWeightFrom"
-                    style="@style/mt_spinner"
-                    android:layout_width="match_parent"
-                    android:layout_height="52dp" />
-                <EditText
-                    android:id="@+id/etWeightInput"
-                    style="@style/mt_input"
-                    android:layout_width="match_parent"
-                    android:layout_height="52dp"
-                    android:layout_marginTop="10dp"
-                    android:hint="@string/hint_enter_value"
-                    android:importantForAutofill="no"
-                    android:inputType="numberDecimal" />
-                <ImageView
-                    android:id="@+id/btnWeightSwap"
-                    android:layout_width="40dp"
-                    android:layout_height="40dp"
-                    android:layout_gravity="center_horizontal"
-                    android:layout_marginTop="14dp"
-                    android:clickable="true"
-                    android:contentDescription="@string/content_description_swap"
-                    android:focusable="true"
-                    android:padding="6dp"
-                    android:src="@drawable/mt_ic_swap" />
-                <TextView
-                    style="@style/mt_label"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/label_to" />
-                <Spinner
-                    android:id="@+id/spWeightTo"
-                    style="@style/mt_spinner"
-                    android:layout_width="match_parent"
-                    android:layout_height="52dp" />
-                <TextView
-                    android:id="@+id/tvWeightResult"
-                    style="@style/mt_input"
-                    android:layout_width="match_parent"
-                    android:layout_height="52dp"
-                    android:layout_marginTop="10dp"
-                    android:hint="@string/hint_result" />
-                <TextView
-                    android:id="@+id/btnWeightConvert"
-                    style="@style/mt_convert_button"
-                    android:layout_width="match_parent"
-                    android:layout_height="56dp"
-                    android:layout_marginTop="28dp"
-                    android:text="@string/btn_convert" />
-            </LinearLayout>
-        </ScrollView>
-
-        <!-- Temperature converter page -->
-        <ScrollView
-            android:id="@+id/temperatureLayout"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:fillViewport="true"
-            android:visibility="gone">
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical">
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal"
-                    android:paddingTop="8dp">
-                    <ImageView
-                        android:layout_width="44dp"
-                        android:layout_height="44dp"
-                        android:importantForAccessibility="no"
-                        android:src="@drawable/mt_ic_temperature" />
-                    <LinearLayout
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="12dp"
-                        android:orientation="vertical">
-                        <TextView
-                            style="@style/mt_section_title"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="@string/title_temperature_converter" />
-                        <TextView
-                            style="@style/mt_subtitle"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="@string/subtitle_temperature_converter" />
-                    </LinearLayout>
-                </LinearLayout>
-
-                <TextView
-                    style="@style/mt_label"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/label_from" />
-                <Spinner
-                    android:id="@+id/spTemperatureFrom"
-                    style="@style/mt_spinner"
-                    android:layout_width="match_parent"
-                    android:layout_height="52dp" />
-                <EditText
-                    android:id="@+id/etTemperatureInput"
-                    style="@style/mt_input"
-                    android:layout_width="match_parent"
-                    android:layout_height="52dp"
-                    android:layout_marginTop="10dp"
-                    android:hint="@string/hint_enter_value"
-                    android:importantForAutofill="no"
-                    android:inputType="numberSigned|numberDecimal" />
-                <ImageView
-                    android:id="@+id/btnTemperatureSwap"
-                    android:layout_width="40dp"
-                    android:layout_height="40dp"
-                    android:layout_gravity="center_horizontal"
-                    android:layout_marginTop="14dp"
-                    android:clickable="true"
-                    android:contentDescription="@string/content_description_swap"
-                    android:focusable="true"
-                    android:padding="6dp"
-                    android:src="@drawable/mt_ic_swap" />
-                <TextView
-                    style="@style/mt_label"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/label_to" />
-                <Spinner
-                    android:id="@+id/spTemperatureTo"
-                    style="@style/mt_spinner"
-                    android:layout_width="match_parent"
-                    android:layout_height="52dp" />
-                <TextView
-                    android:id="@+id/tvTemperatureResult"
-                    style="@style/mt_input"
-                    android:layout_width="match_parent"
-                    android:layout_height="52dp"
-                    android:layout_marginTop="10dp"
-                    android:hint="@string/hint_result" />
-                <TextView
-                    android:id="@+id/btnTemperatureConvert"
-                    style="@style/mt_convert_button"
-                    android:layout_width="match_parent"
-                    android:layout_height="56dp"
-                    android:layout_marginTop="28dp"
-                    android:text="@string/btn_convert" />
-            </LinearLayout>
-        </ScrollView>
-    </FrameLayout>
+    </LinearLayout>
 </LinearLayout>
