@@ -30,6 +30,10 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
     private static final float BULLET_PLAYER_OVERLAP_DP = 2f;
     private static final float BULLET_HITBOX_INSET_RATIO = 0.05f;
     private static final float ENEMY_HITBOX_INSET_RATIO = 0.10f;
+    private static final float PLAYER_HITBOX_INSET_RATIO = 0.12f;
+    private static final int INITIAL_PLAYER_LIVES = 3;
+    private static final float PLAYER_INVULNERABILITY_SECONDS = 2.0f;
+    private static final float PLAYER_BLINK_INTERVAL_SECONDS = 0.125f;
     private static final int SCORE_SCOUT = 100;
     private static final int SCORE_HORNET = 150;
     private static final int SCORE_HEAVY_BOMBER = 250;
@@ -125,6 +129,10 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
     private String selectedDifficultyId = "normal";
     private int score;
     private String scoreLine;
+    private int playerLives = INITIAL_PLAYER_LIVES;
+    private boolean playerInvulnerable;
+    private float playerInvulnerabilityTimerSeconds;
+    private String livesLine;
     private String diagnosticLine;
 
     public GameView(Context context) {
@@ -150,6 +158,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
 
         initializePaints();
         updateScoreLine();
+        updateLivesLine();
         updateDiagnosticLines();
         setFocusable(true);
         setClickable(true);
@@ -198,6 +207,10 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
         releaseEnemyBitmaps();
         score = 0;
         updateScoreLine();
+        playerLives = INITIAL_PLAYER_LIVES;
+        playerInvulnerable = false;
+        playerInvulnerabilityTimerSeconds = 0f;
+        updateLivesLine();
 
         int drawableResourceId = getMachineDrawableResource(selectedMachineId);
         Player currentPlayer = player;
@@ -390,6 +403,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
     }
 
     private void update(float deltaSeconds) {
+        updatePlayerInvulnerability(deltaSeconds);
         scrollingBackground.update(deltaSeconds);
 
         updateEnemySpawning(deltaSeconds);
@@ -403,6 +417,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
         updateAutomaticFire(deltaSeconds);
         updatePlayerBullets(deltaSeconds);
         checkPlayerBulletEnemyCollisions();
+        checkPlayerEnemyCollisions();
         removeOffScreenEnemies();
         removeOffScreenPlayerBullets();
     }
@@ -431,7 +446,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
             drawPlayerBullets(canvas);
 
             Player currentPlayer = player;
-            if (currentPlayer != null) {
+            if (currentPlayer != null && shouldDrawPlayer()) {
                 currentPlayer.draw(canvas);
             }
 
@@ -730,6 +745,100 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
         }
     }
 
+    private void checkPlayerEnemyCollisions() {
+        Player currentPlayer = player;
+        if (!canPlayerTakeDamage(currentPlayer)) {
+            return;
+        }
+
+        for (int enemyIndex = enemies.size() - 1; enemyIndex >= 0; enemyIndex--) {
+            Enemy enemy = enemies.get(enemyIndex);
+            if (!intersectsPlayerAndEnemy(currentPlayer, enemy)) {
+                continue;
+            }
+
+            enemies.remove(enemyIndex);
+            damagePlayer();
+            break;
+        }
+    }
+
+    private boolean canPlayerTakeDamage(Player currentPlayer) {
+        return currentPlayer != null
+                && currentPlayer.isPrepared()
+                && playerLives > 0
+                && !playerInvulnerable;
+    }
+
+    private void damagePlayer() {
+        if (playerLives <= 0 || playerInvulnerable) {
+            return;
+        }
+
+        playerLives = Math.max(0, playerLives - 1);
+        playerInvulnerable = true;
+        playerInvulnerabilityTimerSeconds = PLAYER_INVULNERABILITY_SECONDS;
+        updateLivesLine();
+    }
+
+    private void updatePlayerInvulnerability(float deltaSeconds) {
+        if (!playerInvulnerable) {
+            return;
+        }
+
+        playerInvulnerabilityTimerSeconds -= deltaSeconds;
+        if (playerInvulnerabilityTimerSeconds <= 0f) {
+            playerInvulnerabilityTimerSeconds = 0f;
+            playerInvulnerable = false;
+        }
+    }
+
+    private boolean shouldDrawPlayer() {
+        if (!playerInvulnerable) {
+            return true;
+        }
+
+        int blinkPhase = (int) (
+                playerInvulnerabilityTimerSeconds / PLAYER_BLINK_INTERVAL_SECONDS
+        );
+        return blinkPhase % 2 == 0;
+    }
+
+    private boolean intersectsPlayerAndEnemy(Player currentPlayer, Enemy enemy) {
+        float playerHorizontalInset = currentPlayer.getWidth() * PLAYER_HITBOX_INSET_RATIO;
+        float playerVerticalInset = currentPlayer.getHeight() * PLAYER_HITBOX_INSET_RATIO;
+        float playerLeft = currentPlayer.getCenterX()
+                - currentPlayer.getWidth() / 2f
+                + playerHorizontalInset;
+        float playerTop = currentPlayer.getCenterY()
+                - currentPlayer.getHeight() / 2f
+                + playerVerticalInset;
+        float playerRight = currentPlayer.getCenterX()
+                + currentPlayer.getWidth() / 2f
+                - playerHorizontalInset;
+        float playerBottom = currentPlayer.getCenterY()
+                + currentPlayer.getHeight() / 2f
+                - playerVerticalInset;
+
+        float enemyHorizontalInset = enemy.getWidth() * ENEMY_HITBOX_INSET_RATIO;
+        float enemyVerticalInset = enemy.getHeight() * ENEMY_HITBOX_INSET_RATIO;
+        float enemyLeft = enemy.getX() + enemyHorizontalInset;
+        float enemyTop = enemy.getY() + enemyVerticalInset;
+        float enemyRight = enemy.getX() + enemy.getWidth() - enemyHorizontalInset;
+        float enemyBottom = enemy.getY() + enemy.getHeight() - enemyVerticalInset;
+
+        return rectanglesOverlap(
+                playerLeft,
+                playerTop,
+                playerRight,
+                playerBottom,
+                enemyLeft,
+                enemyTop,
+                enemyRight,
+                enemyBottom
+        );
+    }
+
     private boolean intersects(Bullet bullet, Enemy enemy) {
         float bulletHorizontalInset = bullet.getWidth() * BULLET_HITBOX_INSET_RATIO;
         float bulletVerticalInset = bullet.getHeight() * BULLET_HITBOX_INSET_RATIO;
@@ -825,8 +934,13 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
         scoreLine = String.format(Locale.US, "SCORE %06d", score);
     }
 
+    private void updateLivesLine() {
+        livesLine = String.format(Locale.US, "LIVES %d", playerLives);
+    }
+
     private void drawHud(Canvas canvas) {
         if ((scoreLine == null || scoreLine.isEmpty())
+                && (livesLine == null || livesLine.isEmpty())
                 && (diagnosticLine == null || diagnosticLine.isEmpty())) {
             return;
         }
@@ -836,12 +950,20 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
         float panelPadding = 8f * density;
         float lineSpacing = 4f * density;
         boolean hasScore = scoreLine != null && !scoreLine.isEmpty();
+        boolean hasLives = livesLine != null && !livesLine.isEmpty();
         boolean hasDiagnostic = diagnosticLine != null && !diagnosticLine.isEmpty();
         float contentWidth = 0f;
         float contentHeight = 0f;
 
         if (hasScore) {
             contentWidth = Math.max(contentWidth, scorePaint.measureText(scoreLine));
+            contentHeight += scorePaint.getTextSize();
+        }
+        if (hasLives) {
+            contentWidth = Math.max(contentWidth, scorePaint.measureText(livesLine));
+            if (contentHeight > 0f) {
+                contentHeight += lineSpacing;
+            }
             contentHeight += scorePaint.getTextSize();
         }
         if (hasDiagnostic) {
@@ -912,8 +1034,16 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
             textBaseline += scorePaint.getTextSize();
             canvas.drawText(scoreLine, textLeft, textBaseline, scorePaint);
         }
-        if (hasDiagnostic) {
+        if (hasLives) {
             if (hasScore) {
+                textBaseline += lineSpacing + scorePaint.getTextSize();
+            } else {
+                textBaseline += scorePaint.getTextSize();
+            }
+            canvas.drawText(livesLine, textLeft, textBaseline, scorePaint);
+        }
+        if (hasDiagnostic) {
+            if (hasScore || hasLives) {
                 textBaseline += lineSpacing + infoPaint.getTextSize();
             } else {
                 textBaseline += infoPaint.getTextSize();
