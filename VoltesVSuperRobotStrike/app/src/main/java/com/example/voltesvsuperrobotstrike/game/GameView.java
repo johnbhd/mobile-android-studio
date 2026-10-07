@@ -19,6 +19,7 @@ import androidx.core.view.WindowInsetsCompat;
 import com.example.voltesvsuperrobotstrike.R;
 
 import java.util.ArrayList;
+import java.util.Random;
 
 public class GameView extends SurfaceView implements SurfaceHolder.Callback, Runnable {
 
@@ -26,6 +27,40 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
     private static final float AUTO_FIRE_INTERVAL_SECONDS = 0.35f;
     private static final float PLAYER_BULLET_SPEED_DP_PER_SECOND = 700f;
     private static final float BULLET_PLAYER_OVERLAP_DP = 2f;
+    private static final float ENEMY_FIRST_SPAWN_DELAY_SECONDS = 0.85f;
+    private static final float ENEMY_SIDE_MARGIN_DP = 6f;
+    private static final float SCOUT_SPEED_HEIGHT_RATIO = 0.24f;
+    private static final float HORNET_SPEED_HEIGHT_RATIO = 0.27f;
+    private static final float HEAVY_BOMBER_SPEED_HEIGHT_RATIO = 0.15f;
+    private static final float CRAB_SPEED_HEIGHT_RATIO = 0.19f;
+    private static final float ELITE_SPEED_HEIGHT_RATIO = 0.22f;
+    private static final float HORNET_DRIFT_WIDTH_RATIO = 0.06f;
+    private static final float CRAB_DRIFT_WIDTH_RATIO = 0.04f;
+    private static final float ELITE_DRIFT_WIDTH_RATIO = 0.03f;
+    private static final int ENEMY_SCOUT = 0;
+    private static final int ENEMY_HORNET = 1;
+    private static final int ENEMY_HEAVY_BOMBER = 2;
+    private static final int ENEMY_CRAB = 3;
+    private static final int ENEMY_ELITE = 4;
+    private static final int[] EASY_ENEMY_POOL = {
+            ENEMY_SCOUT, ENEMY_SCOUT, ENEMY_SCOUT, ENEMY_SCOUT,
+            ENEMY_SCOUT, ENEMY_SCOUT, ENEMY_SCOUT,
+            ENEMY_HORNET, ENEMY_HORNET, ENEMY_HORNET
+    };
+    private static final int[] NORMAL_ENEMY_POOL = {
+            ENEMY_SCOUT, ENEMY_SCOUT, ENEMY_SCOUT, ENEMY_SCOUT, ENEMY_SCOUT,
+            ENEMY_SCOUT, ENEMY_SCOUT, ENEMY_SCOUT, ENEMY_SCOUT,
+            ENEMY_HORNET, ENEMY_HORNET, ENEMY_HORNET, ENEMY_HORNET,
+            ENEMY_HORNET, ENEMY_HORNET, ENEMY_HORNET,
+            ENEMY_HEAVY_BOMBER, ENEMY_HEAVY_BOMBER, ENEMY_HEAVY_BOMBER, ENEMY_HEAVY_BOMBER
+    };
+    private static final int[] HARD_ENEMY_POOL = {
+            ENEMY_SCOUT, ENEMY_SCOUT, ENEMY_SCOUT, ENEMY_SCOUT, ENEMY_SCOUT, ENEMY_SCOUT,
+            ENEMY_HORNET, ENEMY_HORNET, ENEMY_HORNET, ENEMY_HORNET, ENEMY_HORNET,
+            ENEMY_HEAVY_BOMBER, ENEMY_HEAVY_BOMBER, ENEMY_HEAVY_BOMBER, ENEMY_HEAVY_BOMBER,
+            ENEMY_CRAB, ENEMY_CRAB, ENEMY_CRAB,
+            ENEMY_ELITE, ENEMY_ELITE
+    };
     private static final long TARGET_FRAME_DURATION_NANOS = 1_000_000_000L / 60L;
     private static final long THREAD_JOIN_TIMEOUT_MILLIS = 500L;
 
@@ -36,12 +71,18 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
     private final Paint projectilePaint = new Paint(
             Paint.ANTI_ALIAS_FLAG | Paint.FILTER_BITMAP_FLAG
     );
+    private final Paint enemyPaint = new Paint(
+            Paint.ANTI_ALIAS_FLAG | Paint.FILTER_BITMAP_FLAG
+    );
     private final float density;
     private final float playerBulletSpeedPixelsPerSecond;
     private final float bulletPlayerOverlapPixels;
+    private final float enemySideMarginPixels;
     private final int backgroundColor;
     private final ScrollingBackground scrollingBackground;
     private final ArrayList<Bullet> playerBullets = new ArrayList<>();
+    private final ArrayList<Enemy> enemies = new ArrayList<>();
+    private final Random enemyRandom = new Random();
     private volatile Player player;
 
     private volatile boolean running;
@@ -62,6 +103,14 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
     private Bitmap projectileBitmap;
     private int preparedProjectileResourceId;
     private float fireCooldownSeconds = AUTO_FIRE_INTERVAL_SECONDS;
+    private Bitmap scoutEnemyBitmap;
+    private Bitmap hornetEnemyBitmap;
+    private Bitmap heavyBomberEnemyBitmap;
+    private Bitmap crabEnemyBitmap;
+    private Bitmap eliteEnemyBitmap;
+    private int preparedEnemyWidth;
+    private int preparedEnemyHeight;
+    private float enemySpawnCooldownSeconds = ENEMY_FIRST_SPAWN_DELAY_SECONDS;
 
     private String selectedMachineId = "volt_crewzer";
     private String selectedDifficultyId = "normal";
@@ -83,6 +132,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
         density = getResources().getDisplayMetrics().density;
         playerBulletSpeedPixelsPerSecond = PLAYER_BULLET_SPEED_DP_PER_SECOND * density;
         bulletPlayerOverlapPixels = BULLET_PLAYER_OVERLAP_DP * density;
+        enemySideMarginPixels = ENEMY_SIDE_MARGIN_DP * density;
         backgroundColor = ContextCompat.getColor(context, R.color.game_background);
         scrollingBackground = new ScrollingBackground(context);
         player = new Player(getResources(), R.drawable.volt_crewzer, density);
@@ -116,11 +166,16 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
         selectedMachineId = isSupportedMachineId(selectedMachine)
                 ? selectedMachine
                 : "volt_crewzer";
-        selectedDifficultyId = selectedDifficulty == null ? "normal" : selectedDifficulty;
+        selectedDifficultyId = isSupportedDifficultyId(selectedDifficulty)
+                ? selectedDifficulty
+                : "normal";
 
         playerBullets.clear();
         fireCooldownSeconds = AUTO_FIRE_INTERVAL_SECONDS;
         releaseProjectileBitmap();
+        enemies.clear();
+        enemySpawnCooldownSeconds = ENEMY_FIRST_SPAWN_DELAY_SECONDS;
+        releaseEnemyBitmaps();
 
         int drawableResourceId = getMachineDrawableResource(selectedMachineId);
         Player currentPlayer = player;
@@ -146,6 +201,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
         }
 
         prepareProjectileBitmapIfReady();
+        prepareEnemyBitmapsIfReady();
 
         updateDiagnosticLines();
     }
@@ -165,6 +221,8 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
         scrollingBackground.release();
         playerBullets.clear();
         releaseProjectileBitmap();
+        enemies.clear();
+        releaseEnemyBitmaps();
 
         Player currentPlayer = player;
         if (currentPlayer != null) {
@@ -218,9 +276,13 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
             if (dimensionsChanged) {
                 playerBullets.clear();
                 fireCooldownSeconds = AUTO_FIRE_INTERVAL_SECONDS;
+                enemies.clear();
+                enemySpawnCooldownSeconds = ENEMY_FIRST_SPAWN_DELAY_SECONDS;
+                releaseEnemyBitmaps();
             }
 
             prepareProjectileBitmapIfReady();
+            prepareEnemyBitmapsIfReady();
         }
 
         if (restartGameThread) {
@@ -308,6 +370,9 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
     private void update(float deltaSeconds) {
         scrollingBackground.update(deltaSeconds);
 
+        updateEnemySpawning(deltaSeconds);
+        updateEnemies(deltaSeconds);
+
         Player currentPlayer = player;
         if (currentPlayer != null) {
             currentPlayer.update();
@@ -337,6 +402,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
 
             scrollingBackground.draw(canvas);
 
+            drawEnemies(canvas);
             drawPlayerBullets(canvas);
 
             Player currentPlayer = player;
@@ -422,6 +488,263 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
     private void drawPlayerBullets(Canvas canvas) {
         for (Bullet bullet : playerBullets) {
             bullet.draw(canvas, projectilePaint);
+        }
+    }
+
+    private void drawEnemies(Canvas canvas) {
+        for (Enemy enemy : enemies) {
+            enemy.draw(canvas, enemyPaint);
+        }
+    }
+
+    private void updateEnemySpawning(float deltaSeconds) {
+        if (screenWidth <= 0
+                || screenHeight <= 0
+                || !areEnemyBitmapsReady()) {
+            return;
+        }
+
+        enemySpawnCooldownSeconds -= deltaSeconds;
+        if (enemySpawnCooldownSeconds > 0f) {
+            return;
+        }
+
+        enemySpawnCooldownSeconds = getEnemySpawnIntervalSeconds();
+        if (enemies.size() >= getMaximumActiveEnemies()) {
+            return;
+        }
+
+        spawnEnemy();
+    }
+
+    private void updateEnemies(float deltaSeconds) {
+        for (int index = enemies.size() - 1; index >= 0; index--) {
+            Enemy enemy = enemies.get(index);
+            enemy.update(deltaSeconds);
+
+            if (enemy.isOffScreen(screenHeight)) {
+                enemies.remove(index);
+            }
+        }
+    }
+
+    private void spawnEnemy() {
+        int enemyType = selectEnemyType();
+        Bitmap bitmap = getEnemyBitmap(enemyType);
+        if (bitmap == null) {
+            return;
+        }
+
+        float minimumX = enemySideMarginPixels;
+        float maximumX = screenWidth - bitmap.getWidth() - enemySideMarginPixels;
+        float spawnX = maximumX <= minimumX
+                ? Math.max(0f, (screenWidth - bitmap.getWidth()) / 2f)
+                : minimumX + enemyRandom.nextFloat() * (maximumX - minimumX);
+        float spawnY = -bitmap.getHeight();
+        float verticalSpeed = screenHeight
+                * getEnemySpeedRatio(enemyType)
+                * getEnemySpeedMultiplier();
+        float horizontalSpeed = getEnemyHorizontalSpeed(enemyType);
+
+        enemies.add(new Enemy(
+                bitmap,
+                spawnX,
+                spawnY,
+                verticalSpeed,
+                horizontalSpeed,
+                screenWidth
+        ));
+    }
+
+    private int selectEnemyType() {
+        int[] enemyPool = getEnemyPool();
+        return enemyPool[enemyRandom.nextInt(enemyPool.length)];
+    }
+
+    private int[] getEnemyPool() {
+        if ("easy".equals(selectedDifficultyId)) {
+            return EASY_ENEMY_POOL;
+        }
+        if ("hard".equals(selectedDifficultyId)) {
+            return HARD_ENEMY_POOL;
+        }
+        return NORMAL_ENEMY_POOL;
+    }
+
+    private Bitmap getEnemyBitmap(int enemyType) {
+        switch (enemyType) {
+            case ENEMY_HORNET:
+                return hornetEnemyBitmap;
+            case ENEMY_HEAVY_BOMBER:
+                return heavyBomberEnemyBitmap;
+            case ENEMY_CRAB:
+                return crabEnemyBitmap;
+            case ENEMY_ELITE:
+                return eliteEnemyBitmap;
+            case ENEMY_SCOUT:
+            default:
+                return scoutEnemyBitmap;
+        }
+    }
+
+    private float getEnemySpeedRatio(int enemyType) {
+        switch (enemyType) {
+            case ENEMY_HORNET:
+                return HORNET_SPEED_HEIGHT_RATIO;
+            case ENEMY_HEAVY_BOMBER:
+                return HEAVY_BOMBER_SPEED_HEIGHT_RATIO;
+            case ENEMY_CRAB:
+                return CRAB_SPEED_HEIGHT_RATIO;
+            case ENEMY_ELITE:
+                return ELITE_SPEED_HEIGHT_RATIO;
+            case ENEMY_SCOUT:
+            default:
+                return SCOUT_SPEED_HEIGHT_RATIO;
+        }
+    }
+
+    private float getEnemyHorizontalSpeed(int enemyType) {
+        float horizontalSpeedRatio;
+        switch (enemyType) {
+            case ENEMY_HORNET:
+                horizontalSpeedRatio = HORNET_DRIFT_WIDTH_RATIO;
+                break;
+            case ENEMY_CRAB:
+                horizontalSpeedRatio = CRAB_DRIFT_WIDTH_RATIO;
+                break;
+            case ENEMY_ELITE:
+                horizontalSpeedRatio = ELITE_DRIFT_WIDTH_RATIO;
+                break;
+            case ENEMY_HEAVY_BOMBER:
+            case ENEMY_SCOUT:
+            default:
+                return 0f;
+        }
+
+        float horizontalSpeed = screenWidth * horizontalSpeedRatio;
+        return enemyRandom.nextBoolean() ? horizontalSpeed : -horizontalSpeed;
+    }
+
+    private float getEnemySpeedMultiplier() {
+        if ("easy".equals(selectedDifficultyId)) {
+            return 0.85f;
+        }
+        if ("hard".equals(selectedDifficultyId)) {
+            return 1.20f;
+        }
+        return 1.00f;
+    }
+
+    private float getEnemySpawnIntervalSeconds() {
+        if ("easy".equals(selectedDifficultyId)) {
+            return 1.25f;
+        }
+        if ("hard".equals(selectedDifficultyId)) {
+            return 0.75f;
+        }
+        return 1.00f;
+    }
+
+    private int getMaximumActiveEnemies() {
+        if ("easy".equals(selectedDifficultyId)) {
+            return 3;
+        }
+        if ("hard".equals(selectedDifficultyId)) {
+            return 5;
+        }
+        return 4;
+    }
+
+    private void prepareEnemyBitmapsIfReady() {
+        if (screenWidth <= 0 || screenHeight <= 0) {
+            return;
+        }
+
+        if (preparedEnemyWidth == screenWidth
+                && preparedEnemyHeight == screenHeight
+                && areEnemyBitmapsReady()) {
+            return;
+        }
+
+        releaseEnemyBitmaps();
+        scoutEnemyBitmap = loadScaledEnemyBitmap(
+                R.drawable.enemy_scout_drone,
+                0.11f
+        );
+        hornetEnemyBitmap = loadScaledEnemyBitmap(
+                R.drawable.enemy_hornet_fighter,
+                0.12f
+        );
+        heavyBomberEnemyBitmap = loadScaledEnemyBitmap(
+                R.drawable.enemy_heavy_bomber,
+                0.17f
+        );
+        crabEnemyBitmap = loadScaledEnemyBitmap(
+                R.drawable.enemy_crab_tank,
+                0.16f
+        );
+        eliteEnemyBitmap = loadScaledEnemyBitmap(
+                R.drawable.enemy_elite_commander,
+                0.18f
+        );
+        preparedEnemyWidth = screenWidth;
+        preparedEnemyHeight = screenHeight;
+    }
+
+    private Bitmap loadScaledEnemyBitmap(int resourceId, float widthRatio) {
+        Bitmap sourceBitmap = BitmapFactory.decodeResource(getResources(), resourceId);
+        if (sourceBitmap == null
+                || sourceBitmap.getWidth() <= 0
+                || sourceBitmap.getHeight() <= 0) {
+            return null;
+        }
+
+        int targetWidth = Math.max(1, Math.round(screenWidth * widthRatio));
+        int targetHeight = Math.max(
+                1,
+                Math.round(sourceBitmap.getHeight()
+                        * (targetWidth / (float) sourceBitmap.getWidth()))
+        );
+        Bitmap scaledBitmap = Bitmap.createScaledBitmap(
+                sourceBitmap,
+                targetWidth,
+                targetHeight,
+                true
+        );
+
+        if (scaledBitmap != sourceBitmap) {
+            sourceBitmap.recycle();
+        }
+
+        return scaledBitmap;
+    }
+
+    private boolean areEnemyBitmapsReady() {
+        return scoutEnemyBitmap != null
+                && hornetEnemyBitmap != null
+                && heavyBomberEnemyBitmap != null
+                && crabEnemyBitmap != null
+                && eliteEnemyBitmap != null;
+    }
+
+    private void releaseEnemyBitmaps() {
+        releaseBitmap(scoutEnemyBitmap);
+        releaseBitmap(hornetEnemyBitmap);
+        releaseBitmap(heavyBomberEnemyBitmap);
+        releaseBitmap(crabEnemyBitmap);
+        releaseBitmap(eliteEnemyBitmap);
+        scoutEnemyBitmap = null;
+        hornetEnemyBitmap = null;
+        heavyBomberEnemyBitmap = null;
+        crabEnemyBitmap = null;
+        eliteEnemyBitmap = null;
+        preparedEnemyWidth = 0;
+        preparedEnemyHeight = 0;
+    }
+
+    private void releaseBitmap(Bitmap bitmap) {
+        if (bitmap != null && !bitmap.isRecycled()) {
+            bitmap.recycle();
         }
     }
 
@@ -750,6 +1073,12 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
                 || "volt_panzer".equals(machineId)
                 || "volt_frigate".equals(machineId)
                 || "volt_lander".equals(machineId);
+    }
+
+    private boolean isSupportedDifficultyId(String difficultyId) {
+        return "easy".equals(difficultyId)
+                || "normal".equals(difficultyId)
+                || "hard".equals(difficultyId);
     }
 
     private String getDifficultyDisplayName(String difficultyId) {
