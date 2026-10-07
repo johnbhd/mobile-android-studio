@@ -8,10 +8,11 @@ import android.graphics.Paint;
 
 public final class Player {
 
-    private static final float TARGET_WIDTH_FRACTION = 0.18f;
-    private static final float MIN_WIDTH_DP = 64f;
-    private static final float MAX_WIDTH_DP = 96f;
+    private static final float TARGET_WIDTH_FRACTION = 0.20f;
+    private static final float MIN_WIDTH_DP = 72f;
+    private static final float MAX_WIDTH_DP = 110f;
     private static final float SIDE_MARGIN_DP = 6f;
+    private static final float TOP_MARGIN_DP = 24f;
     private static final float BOTTOM_MARGIN_DP = 32f;
 
     private final Resources resources;
@@ -19,6 +20,7 @@ public final class Player {
     private final Paint bitmapPaint = new Paint(Paint.ANTI_ALIAS_FLAG | Paint.FILTER_BITMAP_FLAG);
     private final float density;
     private final float sideMarginPixels;
+    private final float topMarginPixels;
     private final float bottomMarginPixels;
 
     private Bitmap bitmap;
@@ -27,10 +29,11 @@ public final class Player {
     private int preparedWidth;
     private int preparedHeight;
     private float centerX;
-    private float y;
+    private float centerY;
     private float width;
     private float height;
     private volatile float targetCenterX;
+    private volatile float targetCenterY;
     private volatile int bottomSystemInsetPixels;
     private boolean prepared;
 
@@ -39,6 +42,7 @@ public final class Player {
         this.drawableResourceId = drawableResourceId;
         this.density = density;
         sideMarginPixels = SIDE_MARGIN_DP * density;
+        topMarginPixels = TOP_MARGIN_DP * density;
         bottomMarginPixels = BOTTOM_MARGIN_DP * density;
     }
 
@@ -55,6 +59,9 @@ public final class Player {
         float previousCenterRatio = preserveHorizontalPosition
                 ? centerX / screenWidth
                 : 0.5f;
+        float previousCenterYRatio = preserveHorizontalPosition
+                ? centerY / screenHeight
+                : 0f;
 
         releaseBitmap();
         prepared = false;
@@ -90,8 +97,12 @@ public final class Player {
         this.width = scaledBitmap.getWidth();
         this.height = scaledBitmap.getHeight();
         centerX = clampCenterX(previousCenterRatio * width);
+        float requestedCenterY = preserveHorizontalPosition
+                ? previousCenterYRatio * height
+                : calculateInitialCenterY();
+        centerY = clampCenterY(requestedCenterY);
         targetCenterX = centerX;
-        y = calculateY();
+        targetCenterY = centerY;
         prepared = true;
     }
 
@@ -111,7 +122,8 @@ public final class Player {
         }
 
         targetCenterX = centerX;
-        y = calculateY();
+        centerY = clampCenterY(targetCenterY);
+        targetCenterY = centerY;
     }
 
     public synchronized void draw(Canvas canvas) {
@@ -119,11 +131,17 @@ public final class Player {
             return;
         }
 
-        canvas.drawBitmap(bitmap, centerX - width / 2f, y, bitmapPaint);
+        canvas.drawBitmap(
+                bitmap,
+                centerX - width / 2f,
+                centerY - height / 2f,
+                bitmapPaint
+        );
     }
 
-    public void setTargetCenterX(float targetCenterX) {
+    public void setTargetCenter(float targetCenterX, float targetCenterY) {
         this.targetCenterX = targetCenterX;
+        this.targetCenterY = targetCenterY;
     }
 
     public void setBottomSystemInsetPixels(int bottomSystemInsetPixels) {
@@ -132,6 +150,18 @@ public final class Player {
 
     public synchronized float getCenterX() {
         return centerX;
+    }
+
+    public synchronized float getCenterY() {
+        return centerY;
+    }
+
+    public synchronized float getWidth() {
+        return width;
+    }
+
+    public synchronized float getHeight() {
+        return height;
     }
 
     public synchronized boolean isPrepared() {
@@ -157,11 +187,11 @@ public final class Player {
         return Math.max(1, Math.min(screenWidth, targetWidth));
     }
 
-    private float calculateY() {
-        return Math.max(
-                0f,
-                screenHeight - height - bottomMarginPixels - bottomSystemInsetPixels
-        );
+    private float calculateInitialCenterY() {
+        return screenHeight
+                - height / 2f
+                - bottomMarginPixels
+                - bottomSystemInsetPixels;
     }
 
     private float clamp(float value, float minimum, float maximum) {
@@ -180,6 +210,21 @@ public final class Player {
         return clamp(requestedCenterX, minimumCenterX, maximumCenterX);
     }
 
+    private float clampCenterY(float requestedCenterY) {
+        float halfHeight = height / 2f;
+        float minimumCenterY = halfHeight + topMarginPixels;
+        float maximumCenterY = screenHeight
+                - halfHeight
+                - bottomMarginPixels
+                - bottomSystemInsetPixels;
+
+        if (maximumCenterY < minimumCenterY) {
+            return screenHeight / 2f;
+        }
+
+        return clamp(requestedCenterY, minimumCenterY, maximumCenterY);
+    }
+
     private void releaseBitmap() {
         if (bitmap != null && !bitmap.isRecycled()) {
             bitmap.recycle();
@@ -194,8 +239,9 @@ public final class Player {
         preparedWidth = 0;
         preparedHeight = 0;
         centerX = 0f;
+        centerY = 0f;
         targetCenterX = 0f;
-        y = 0f;
+        targetCenterY = 0f;
         width = 0f;
         height = 0f;
     }

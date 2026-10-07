@@ -24,7 +24,6 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
 
     private final SurfaceHolder surfaceHolder;
     private final Object gameThreadLock = new Object();
-    private final Paint titlePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint infoPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint diagnosticPanelPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final float density;
@@ -37,19 +36,19 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
     private volatile boolean activityResumed;
     private volatile int screenWidth;
     private volatile int screenHeight;
+    private volatile int topSystemInsetPixels;
     private volatile int bottomSystemInsetPixels;
 
     private Thread gameThread;
     private int activePointerId = MotionEvent.INVALID_POINTER_ID;
     private float dragStartTouchX;
+    private float dragStartTouchY;
     private float dragStartPlayerCenterX;
+    private float dragStartPlayerCenterY;
 
     private String selectedMachineId = "volt_crewzer";
     private String selectedDifficultyId = "normal";
-    private String foundationTitle;
-    private String machineLine;
-    private String difficultyLine;
-    private String runningLine;
+    private String diagnosticLine;
 
     public GameView(Context context) {
         this(context, null);
@@ -70,8 +69,6 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
         player = new Player(getResources(), R.drawable.volt_crewzer, density);
 
         initializePaints();
-        foundationTitle = getResources().getString(R.string.game_foundation_title);
-        runningLine = getResources().getString(R.string.game_foundation_running);
         updateDiagnosticLines();
         setFocusable(true);
         setClickable(true);
@@ -79,10 +76,6 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
     }
 
     private void initializePaints() {
-        int debugTextColor = ContextCompat.getColor(
-                getContext(),
-                R.color.game_debug_text
-        );
         int mutedTextColor = ContextCompat.getColor(
                 getContext(),
                 R.color.game_debug_muted
@@ -92,14 +85,9 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
                 R.color.game_debug_panel
         );
 
-        titlePaint.setColor(debugTextColor);
-        titlePaint.setTextSize(20f * density);
-        titlePaint.setTextAlign(Paint.Align.CENTER);
-        titlePaint.setTypeface(Typeface.create("sans-serif-condensed", Typeface.BOLD));
-
         infoPaint.setColor(mutedTextColor);
-        infoPaint.setTextSize(14f * density);
-        infoPaint.setTextAlign(Paint.Align.CENTER);
+        infoPaint.setTextSize(13f * getResources().getDisplayMetrics().scaledDensity);
+        infoPaint.setTextAlign(Paint.Align.LEFT);
         infoPaint.setTypeface(Typeface.create("sans-serif-condensed", Typeface.NORMAL));
 
         diagnosticPanelPaint.setColor(diagnosticPanelColor);
@@ -306,9 +294,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
                 currentPlayer.draw(canvas);
             }
 
-            int width = screenWidth > 0 ? screenWidth : canvas.getWidth();
-            int height = screenHeight > 0 ? screenHeight : canvas.getHeight();
-            drawDiagnostics(canvas, width, height);
+            drawDiagnostics(canvas);
         } finally {
             if (canvasLocked) {
                 surfaceHolder.unlockCanvasAndPost(canvas);
@@ -316,14 +302,62 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
         }
     }
 
-    private void drawDiagnostics(Canvas canvas, int width, int height) {
-        float centerX = width / 2f;
-        float firstLineY = Math.max(48f * density, height * 0.3f);
-        float lineSpacing = 28f * density;
-        float panelLeft = 16f * density;
-        float panelTop = firstLineY - 30f * density;
-        float panelRight = width - panelLeft;
-        float panelBottom = firstLineY + lineSpacing * 5f + 10f * density;
+    private void drawDiagnostics(Canvas canvas) {
+        if (diagnosticLine == null || diagnosticLine.isEmpty()) {
+            return;
+        }
+
+        float panelLeft = 12f * density;
+        float panelTop = topSystemInsetPixels + 8f * density;
+        float panelPadding = 8f * density;
+        float textLeft = panelLeft + 8f * density;
+        float textBaseline = panelTop + infoPaint.getTextSize() + 6f * density;
+        float panelWidth = infoPaint.measureText(diagnosticLine) + panelPadding * 2f;
+        float panelRight = panelLeft + panelWidth;
+        float panelBottom = textBaseline + 6f * density;
+
+        Player currentPlayer = player;
+        if (currentPlayer != null && currentPlayer.isPrepared()) {
+            float playerLeft = currentPlayer.getCenterX() - currentPlayer.getWidth() / 2f;
+            float playerTop = currentPlayer.getCenterY() - currentPlayer.getHeight() / 2f;
+            float playerRight = currentPlayer.getCenterX() + currentPlayer.getWidth() / 2f;
+            float playerBottom = currentPlayer.getCenterY() + currentPlayer.getHeight() / 2f;
+
+            if (rectanglesOverlap(
+                    panelLeft,
+                    panelTop,
+                    panelRight,
+                    panelBottom,
+                    playerLeft,
+                    playerTop,
+                    playerRight,
+                    playerBottom
+            )) {
+                panelLeft = canvas.getWidth() - panelWidth - 12f * density;
+                panelRight = panelLeft + panelWidth;
+
+                if (rectanglesOverlap(
+                        panelLeft,
+                        panelTop,
+                        panelRight,
+                        panelBottom,
+                        playerLeft,
+                        playerTop,
+                        playerRight,
+                        playerBottom
+                )) {
+                    panelTop = Math.min(
+                            playerBottom + 8f * density,
+                            canvas.getHeight() - (panelBottom - (topSystemInsetPixels + 8f * density))
+                    );
+                    panelBottom = panelTop + (textBaseline - (topSystemInsetPixels + 8f * density));
+                }
+            }
+        }
+
+        textLeft = panelLeft + panelPadding;
+        textBaseline = panelTop + infoPaint.getTextSize() + 6f * density;
+        panelBottom = textBaseline + 6f * density;
 
         canvas.drawRect(
                 panelLeft,
@@ -332,10 +366,23 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
                 panelBottom,
                 diagnosticPanelPaint
         );
-        canvas.drawText(foundationTitle, centerX, firstLineY, titlePaint);
-        canvas.drawText(machineLine, centerX, firstLineY + lineSpacing * 2f, infoPaint);
-        canvas.drawText(difficultyLine, centerX, firstLineY + lineSpacing * 3f, infoPaint);
-        canvas.drawText(runningLine, centerX, firstLineY + lineSpacing * 5f, infoPaint);
+        canvas.drawText(diagnosticLine, textLeft, textBaseline, infoPaint);
+    }
+
+    private boolean rectanglesOverlap(
+            float firstLeft,
+            float firstTop,
+            float firstRight,
+            float firstBottom,
+            float secondLeft,
+            float secondTop,
+            float secondRight,
+            float secondBottom
+    ) {
+        return firstLeft < secondRight
+                && firstRight > secondLeft
+                && firstTop < secondBottom
+                && firstBottom > secondTop;
     }
 
     @Override
@@ -357,7 +404,9 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
             case MotionEvent.ACTION_DOWN:
                 activePointerId = event.getPointerId(0);
                 dragStartTouchX = event.getX();
+                dragStartTouchY = event.getY();
                 dragStartPlayerCenterX = currentPlayer.getCenterX();
+                dragStartPlayerCenterY = currentPlayer.getCenterY();
                 return true;
 
             case MotionEvent.ACTION_MOVE:
@@ -372,7 +421,11 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
                 }
 
                 float dragDeltaX = event.getX(pointerIndex) - dragStartTouchX;
-                currentPlayer.setTargetCenterX(dragStartPlayerCenterX + dragDeltaX);
+                float dragDeltaY = event.getY(pointerIndex) - dragStartTouchY;
+                currentPlayer.setTargetCenter(
+                        dragStartPlayerCenterX + dragDeltaX,
+                        dragStartPlayerCenterY + dragDeltaY
+                );
                 return true;
 
             case MotionEvent.ACTION_POINTER_DOWN:
@@ -409,6 +462,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
     private void initializeSystemBarInsets() {
         ViewCompat.setOnApplyWindowInsetsListener(this, (view, insets) -> {
             Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
+            topSystemInsetPixels = systemBars.top;
             bottomSystemInsetPixels = systemBars.bottom;
 
             Player currentPlayer = player;
@@ -424,7 +478,9 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
     private void resetTouchState() {
         activePointerId = MotionEvent.INVALID_POINTER_ID;
         dragStartTouchX = 0f;
+        dragStartTouchY = 0f;
         dragStartPlayerCenterX = 0f;
+        dragStartPlayerCenterY = 0f;
     }
 
     private boolean paceFrame(long frameStartTime) {
@@ -452,14 +508,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
         String machineDisplayName = getMachineDisplayName(selectedMachineId);
         String difficultyDisplayName = getDifficultyDisplayName(selectedDifficultyId);
 
-        machineLine = getResources().getString(
-                R.string.game_foundation_machine,
-                machineDisplayName
-        );
-        difficultyLine = getResources().getString(
-                R.string.game_foundation_difficulty,
-                difficultyDisplayName
-        );
+        diagnosticLine = machineDisplayName + " - " + difficultyDisplayName;
     }
 
     private String getMachineDisplayName(String machineId) {
