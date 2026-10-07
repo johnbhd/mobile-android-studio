@@ -34,6 +34,25 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
     private static final int INITIAL_PLAYER_LIVES = 3;
     private static final float PLAYER_INVULNERABILITY_SECONDS = 2.0f;
     private static final float PLAYER_BLINK_INTERVAL_SECONDS = 0.125f;
+    private static final float ENEMY_FIRE_INITIAL_DELAY_MIN_SECONDS = 0.8f;
+    private static final float ENEMY_FIRE_INITIAL_DELAY_MAX_SECONDS = 1.8f;
+    private static final float ENEMY_FIRE_CAP_RETRY_SECONDS = 0.3f;
+    private static final float ENEMY_BULLET_HITBOX_INSET_RATIO = 0.05f;
+    private static final float SCOUT_FIRE_INTERVAL_MIN_SECONDS = 2.0f;
+    private static final float SCOUT_FIRE_INTERVAL_MAX_SECONDS = 2.6f;
+    private static final float HORNET_FIRE_INTERVAL_MIN_SECONDS = 1.6f;
+    private static final float HORNET_FIRE_INTERVAL_MAX_SECONDS = 2.2f;
+    private static final float HEAVY_FIRE_INTERVAL_MIN_SECONDS = 2.5f;
+    private static final float HEAVY_FIRE_INTERVAL_MAX_SECONDS = 3.2f;
+    private static final float CRAB_FIRE_INTERVAL_MIN_SECONDS = 2.0f;
+    private static final float CRAB_FIRE_INTERVAL_MAX_SECONDS = 2.7f;
+    private static final float ELITE_FIRE_INTERVAL_MIN_SECONDS = 1.4f;
+    private static final float ELITE_FIRE_INTERVAL_MAX_SECONDS = 1.9f;
+    private static final float SCOUT_BULLET_SPEED_HEIGHT_RATIO = 0.42f;
+    private static final float HORNET_BULLET_SPEED_HEIGHT_RATIO = 0.48f;
+    private static final float HEAVY_BULLET_SPEED_HEIGHT_RATIO = 0.30f;
+    private static final float CRAB_BULLET_SPEED_HEIGHT_RATIO = 0.35f;
+    private static final float ELITE_BULLET_SPEED_HEIGHT_RATIO = 0.45f;
     private static final int SCORE_SCOUT = 100;
     private static final int SCORE_HORNET = 150;
     private static final int SCORE_HEAVY_BOMBER = 250;
@@ -83,6 +102,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
     private final Paint projectilePaint = new Paint(
             Paint.ANTI_ALIAS_FLAG | Paint.FILTER_BITMAP_FLAG
     );
+    private final Paint enemyProjectilePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint enemyPaint = new Paint(
             Paint.ANTI_ALIAS_FLAG | Paint.FILTER_BITMAP_FLAG
     );
@@ -94,6 +114,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
     private final int backgroundColor;
     private final ScrollingBackground scrollingBackground;
     private final ArrayList<Bullet> playerBullets = new ArrayList<>();
+    private final ArrayList<EnemyBullet> enemyBullets = new ArrayList<>();
     private final ArrayList<Enemy> enemies = new ArrayList<>();
     private final Random enemyRandom = new Random();
     private volatile Player player;
@@ -200,6 +221,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
                 : "normal";
 
         playerBullets.clear();
+        enemyBullets.clear();
         fireCooldownSeconds = AUTO_FIRE_INTERVAL_SECONDS;
         releaseProjectileBitmap();
         enemies.clear();
@@ -255,6 +277,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
         pauseGame();
         scrollingBackground.release();
         playerBullets.clear();
+        enemyBullets.clear();
         releaseProjectileBitmap();
         enemies.clear();
         releaseEnemyBitmaps();
@@ -310,6 +333,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
 
             if (dimensionsChanged) {
                 playerBullets.clear();
+                enemyBullets.clear();
                 fireCooldownSeconds = AUTO_FIRE_INTERVAL_SECONDS;
                 enemies.clear();
                 enemySpawnCooldownSeconds = ENEMY_FIRST_SPAWN_DELAY_SECONDS;
@@ -416,10 +440,14 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
 
         updateAutomaticFire(deltaSeconds);
         updatePlayerBullets(deltaSeconds);
+        updateEnemyShooting();
+        updateEnemyBullets(deltaSeconds);
         checkPlayerBulletEnemyCollisions();
         checkPlayerEnemyCollisions();
+        resolveEnemyBulletPlayerCollisions();
         removeOffScreenEnemies();
         removeOffScreenPlayerBullets();
+        removeOffScreenEnemyBullets();
     }
 
     private void render() {
@@ -444,6 +472,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
 
             drawEnemies(canvas);
             drawPlayerBullets(canvas);
+            drawEnemyBullets(canvas);
 
             Player currentPlayer = player;
             if (currentPlayer != null && shouldDrawPlayer()) {
@@ -461,6 +490,12 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
     private void drawPlayerBullets(Canvas canvas) {
         for (Bullet bullet : playerBullets) {
             bullet.draw(canvas, projectilePaint);
+        }
+    }
+
+    private void drawEnemyBullets(Canvas canvas) {
+        for (EnemyBullet enemyBullet : enemyBullets) {
+            enemyBullet.draw(canvas, enemyProjectilePaint);
         }
     }
 
@@ -493,6 +528,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
     private void updateEnemies(float deltaSeconds) {
         for (Enemy enemy : enemies) {
             enemy.update(deltaSeconds);
+            enemy.updateFireCooldown(deltaSeconds);
         }
     }
 
@@ -522,7 +558,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
                 * getEnemySpeedMultiplier();
         float horizontalSpeed = getEnemyHorizontalSpeed(enemyType);
 
-        enemies.add(new Enemy(
+        Enemy enemy = new Enemy(
                 bitmap,
                 enemyType,
                 spawnX,
@@ -530,7 +566,175 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
                 verticalSpeed,
                 horizontalSpeed,
                 screenWidth
+        );
+        enemy.resetFireCooldown(getInitialEnemyFireDelaySeconds());
+        enemies.add(enemy);
+    }
+
+    private void updateEnemyShooting() {
+        int maximumEnemyBullets = getMaximumActiveEnemyBullets();
+        if (maximumEnemyBullets <= 0) {
+            return;
+        }
+
+        for (Enemy enemy : enemies) {
+            if (!enemy.isReadyToFire()) {
+                continue;
+            }
+
+            if (enemyBullets.size() >= maximumEnemyBullets
+                    || enemy.getY() < 0f
+                    || enemy.getBottom() >= screenHeight) {
+                enemy.resetFireCooldown(ENEMY_FIRE_CAP_RETRY_SECONDS);
+                continue;
+            }
+
+            spawnEnemyBullet(enemy);
+            enemy.resetFireCooldown(getNextEnemyFireIntervalSeconds(enemy.getType()));
+        }
+    }
+
+    private void spawnEnemyBullet(Enemy enemy) {
+        int enemyType = enemy.getType();
+        float width = Math.max(1f, screenWidth * getEnemyBulletWidthRatio(enemyType));
+        float height = width * getEnemyBulletHeightRatio(enemyType);
+        float spawnY = enemy.getBottom() - height * 0.2f;
+        float speed = screenHeight * getEnemyBulletSpeedHeightRatio(enemyType);
+
+        enemyBullets.add(new EnemyBullet(
+                enemy.getCenterX(),
+                spawnY,
+                width,
+                height,
+                speed,
+                getEnemyBulletVisualType(enemyType)
         ));
+    }
+
+    private float getInitialEnemyFireDelaySeconds() {
+        return ENEMY_FIRE_INITIAL_DELAY_MIN_SECONDS
+                + enemyRandom.nextFloat()
+                * (ENEMY_FIRE_INITIAL_DELAY_MAX_SECONDS - ENEMY_FIRE_INITIAL_DELAY_MIN_SECONDS);
+    }
+
+    private float getNextEnemyFireIntervalSeconds(int enemyType) {
+        float minimumInterval = getEnemyFireIntervalMinimumSeconds(enemyType);
+        float maximumInterval = getEnemyFireIntervalMaximumSeconds(enemyType);
+        float baseInterval = minimumInterval
+                + enemyRandom.nextFloat() * (maximumInterval - minimumInterval);
+        return baseInterval * getEnemyFireIntervalMultiplier();
+    }
+
+    private float getEnemyFireIntervalMinimumSeconds(int enemyType) {
+        switch (enemyType) {
+            case ENEMY_HORNET:
+                return HORNET_FIRE_INTERVAL_MIN_SECONDS;
+            case ENEMY_HEAVY_BOMBER:
+                return HEAVY_FIRE_INTERVAL_MIN_SECONDS;
+            case ENEMY_CRAB:
+                return CRAB_FIRE_INTERVAL_MIN_SECONDS;
+            case ENEMY_ELITE:
+                return ELITE_FIRE_INTERVAL_MIN_SECONDS;
+            case ENEMY_SCOUT:
+            default:
+                return SCOUT_FIRE_INTERVAL_MIN_SECONDS;
+        }
+    }
+
+    private float getEnemyFireIntervalMaximumSeconds(int enemyType) {
+        switch (enemyType) {
+            case ENEMY_HORNET:
+                return HORNET_FIRE_INTERVAL_MAX_SECONDS;
+            case ENEMY_HEAVY_BOMBER:
+                return HEAVY_FIRE_INTERVAL_MAX_SECONDS;
+            case ENEMY_CRAB:
+                return CRAB_FIRE_INTERVAL_MAX_SECONDS;
+            case ENEMY_ELITE:
+                return ELITE_FIRE_INTERVAL_MAX_SECONDS;
+            case ENEMY_SCOUT:
+            default:
+                return SCOUT_FIRE_INTERVAL_MAX_SECONDS;
+        }
+    }
+
+    private float getEnemyFireIntervalMultiplier() {
+        if ("easy".equals(selectedDifficultyId)) {
+            return 1.25f;
+        }
+        if ("hard".equals(selectedDifficultyId)) {
+            return 0.80f;
+        }
+        return 1.00f;
+    }
+
+    private int getMaximumActiveEnemyBullets() {
+        if ("easy".equals(selectedDifficultyId)) {
+            return 2;
+        }
+        if ("hard".equals(selectedDifficultyId)) {
+            return 4;
+        }
+        return 3;
+    }
+
+    private float getEnemyBulletWidthRatio(int enemyType) {
+        switch (enemyType) {
+            case ENEMY_HEAVY_BOMBER:
+            case ENEMY_ELITE:
+                return 0.06f;
+            case ENEMY_CRAB:
+                return 0.05f;
+            case ENEMY_HORNET:
+            case ENEMY_SCOUT:
+            default:
+                return 0.03f;
+        }
+    }
+
+    private float getEnemyBulletHeightRatio(int enemyType) {
+        switch (enemyType) {
+            case ENEMY_HORNET:
+            case ENEMY_SCOUT:
+                return 2.2f;
+            case ENEMY_ELITE:
+                return 1.4f;
+            case ENEMY_HEAVY_BOMBER:
+            case ENEMY_CRAB:
+            default:
+                return 1.0f;
+        }
+    }
+
+    private float getEnemyBulletSpeedHeightRatio(int enemyType) {
+        switch (enemyType) {
+            case ENEMY_HORNET:
+                return HORNET_BULLET_SPEED_HEIGHT_RATIO;
+            case ENEMY_HEAVY_BOMBER:
+                return HEAVY_BULLET_SPEED_HEIGHT_RATIO;
+            case ENEMY_CRAB:
+                return CRAB_BULLET_SPEED_HEIGHT_RATIO;
+            case ENEMY_ELITE:
+                return ELITE_BULLET_SPEED_HEIGHT_RATIO;
+            case ENEMY_SCOUT:
+            default:
+                return SCOUT_BULLET_SPEED_HEIGHT_RATIO;
+        }
+    }
+
+    private int getEnemyBulletVisualType(int enemyType) {
+        switch (enemyType) {
+            case ENEMY_HORNET:
+                return EnemyBullet.VISUAL_HORNET;
+            case ENEMY_HEAVY_BOMBER:
+                return EnemyBullet.VISUAL_HEAVY;
+            case ENEMY_CRAB:
+                return EnemyBullet.VISUAL_CRAB;
+            case ENEMY_ELITE:
+                return EnemyBullet.VISUAL_ELITE;
+            case ENEMY_SCOUT:
+            default:
+                return EnemyBullet.VISUAL_SCOUT;
+        }
     }
 
     private int selectEnemyType() {
@@ -805,21 +1009,6 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
     }
 
     private boolean intersectsPlayerAndEnemy(Player currentPlayer, Enemy enemy) {
-        float playerHorizontalInset = currentPlayer.getWidth() * PLAYER_HITBOX_INSET_RATIO;
-        float playerVerticalInset = currentPlayer.getHeight() * PLAYER_HITBOX_INSET_RATIO;
-        float playerLeft = currentPlayer.getCenterX()
-                - currentPlayer.getWidth() / 2f
-                + playerHorizontalInset;
-        float playerTop = currentPlayer.getCenterY()
-                - currentPlayer.getHeight() / 2f
-                + playerVerticalInset;
-        float playerRight = currentPlayer.getCenterX()
-                + currentPlayer.getWidth() / 2f
-                - playerHorizontalInset;
-        float playerBottom = currentPlayer.getCenterY()
-                + currentPlayer.getHeight() / 2f
-                - playerVerticalInset;
-
         float enemyHorizontalInset = enemy.getWidth() * ENEMY_HITBOX_INSET_RATIO;
         float enemyVerticalInset = enemy.getHeight() * ENEMY_HITBOX_INSET_RATIO;
         float enemyLeft = enemy.getX() + enemyHorizontalInset;
@@ -827,15 +1016,68 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
         float enemyRight = enemy.getX() + enemy.getWidth() - enemyHorizontalInset;
         float enemyBottom = enemy.getY() + enemy.getHeight() - enemyVerticalInset;
 
+        return intersectsPlayerBounds(
+                currentPlayer,
+                enemyLeft,
+                enemyTop,
+                enemyRight,
+                enemyBottom
+        );
+    }
+
+    private boolean intersectsPlayerAndEnemyBullet(
+            Player currentPlayer,
+            EnemyBullet enemyBullet
+    ) {
+        float bulletHorizontalInset = enemyBullet.getWidth()
+                * ENEMY_BULLET_HITBOX_INSET_RATIO;
+        float bulletVerticalInset = enemyBullet.getHeight()
+                * ENEMY_BULLET_HITBOX_INSET_RATIO;
+        float bulletLeft = enemyBullet.getX() + bulletHorizontalInset;
+        float bulletTop = enemyBullet.getY() + bulletVerticalInset;
+        float bulletRight = enemyBullet.getX()
+                + enemyBullet.getWidth()
+                - bulletHorizontalInset;
+        float bulletBottom = enemyBullet.getY()
+                + enemyBullet.getHeight()
+                - bulletVerticalInset;
+
+        return intersectsPlayerBounds(
+                currentPlayer,
+                bulletLeft,
+                bulletTop,
+                bulletRight,
+                bulletBottom
+        );
+    }
+
+    private boolean intersectsPlayerBounds(
+            Player currentPlayer,
+            float targetLeft,
+            float targetTop,
+            float targetRight,
+            float targetBottom
+    ) {
+        float playerWidth = currentPlayer.getWidth();
+        float playerHeight = currentPlayer.getHeight();
+        float playerHorizontalInset = playerWidth * PLAYER_HITBOX_INSET_RATIO;
+        float playerVerticalInset = playerHeight * PLAYER_HITBOX_INSET_RATIO;
+        float playerCenterX = currentPlayer.getCenterX();
+        float playerCenterY = currentPlayer.getCenterY();
+        float playerLeft = playerCenterX - playerWidth / 2f + playerHorizontalInset;
+        float playerTop = playerCenterY - playerHeight / 2f + playerVerticalInset;
+        float playerRight = playerCenterX + playerWidth / 2f - playerHorizontalInset;
+        float playerBottom = playerCenterY + playerHeight / 2f - playerVerticalInset;
+
         return rectanglesOverlap(
                 playerLeft,
                 playerTop,
                 playerRight,
                 playerBottom,
-                enemyLeft,
-                enemyTop,
-                enemyRight,
-                enemyBottom
+                targetLeft,
+                targetTop,
+                targetRight,
+                targetBottom
         );
     }
 
@@ -919,6 +1161,39 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
     private void updatePlayerBullets(float deltaSeconds) {
         for (Bullet bullet : playerBullets) {
             bullet.update(deltaSeconds);
+        }
+    }
+
+    private void updateEnemyBullets(float deltaSeconds) {
+        for (EnemyBullet enemyBullet : enemyBullets) {
+            enemyBullet.update(deltaSeconds);
+        }
+    }
+
+    private void resolveEnemyBulletPlayerCollisions() {
+        Player currentPlayer = player;
+        if (currentPlayer == null || !currentPlayer.isPrepared()) {
+            return;
+        }
+
+        for (int index = enemyBullets.size() - 1; index >= 0; index--) {
+            EnemyBullet enemyBullet = enemyBullets.get(index);
+            if (!intersectsPlayerAndEnemyBullet(currentPlayer, enemyBullet)) {
+                continue;
+            }
+
+            enemyBullets.remove(index);
+            if (canPlayerTakeDamage(currentPlayer)) {
+                damagePlayer();
+            }
+        }
+    }
+
+    private void removeOffScreenEnemyBullets() {
+        for (int index = enemyBullets.size() - 1; index >= 0; index--) {
+            if (enemyBullets.get(index).isOffScreen(screenHeight)) {
+                enemyBullets.remove(index);
+            }
         }
     }
 

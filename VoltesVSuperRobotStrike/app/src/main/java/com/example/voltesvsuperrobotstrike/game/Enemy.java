@@ -13,6 +13,7 @@ public final class Enemy {
     private final float verticalSpeedPixelsPerSecond;
     private float horizontalSpeedPixelsPerSecond;
     private final float screenWidth;
+    private float fireCooldownSeconds;
 
     private float x;
     private float y;
@@ -51,6 +52,18 @@ public final class Enemy {
         }
     }
 
+    public void updateFireCooldown(float deltaSeconds) {
+        fireCooldownSeconds -= deltaSeconds;
+    }
+
+    public boolean isReadyToFire() {
+        return fireCooldownSeconds <= 0f;
+    }
+
+    public void resetFireCooldown(float cooldownSeconds) {
+        fireCooldownSeconds = Math.max(0f, cooldownSeconds);
+    }
+
     public void draw(Canvas canvas, Paint paint) {
         canvas.drawBitmap(bitmap, x, y, paint);
     }
@@ -65,6 +78,14 @@ public final class Enemy {
 
     public float getY() {
         return y;
+    }
+
+    public float getCenterX() {
+        return x + width / 2f;
+    }
+
+    public float getBottom() {
+        return y + height;
     }
 
     public float getWidth() {
