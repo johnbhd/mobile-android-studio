@@ -15,6 +15,7 @@ import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
 import com.example.voltesvsuperrobotstrike.R;
+import com.example.voltesvsuperrobotstrike.audio.GameMusicManager;
 
 public class MachineSelectionActivity extends AppCompatActivity {
 
@@ -35,6 +36,7 @@ public class MachineSelectionActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_machine_selection);
+        GameMusicManager.getInstance(this).playMenuMusic();
 
         applySystemBarInsets();
         setupMachineCards();

@@ -16,6 +16,7 @@ import androidx.core.view.WindowInsetsCompat;
 
 import com.example.voltesvsuperrobotstrike.MainActivity;
 import com.example.voltesvsuperrobotstrike.R;
+import com.example.voltesvsuperrobotstrike.audio.GameMusicManager;
 
 public class SplashActivity extends AppCompatActivity {
 
@@ -38,6 +39,7 @@ public class SplashActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_splash);
+        GameMusicManager.getInstance(this).playMenuMusic();
 
         applySystemBarInsets();
         startSplashProgress();

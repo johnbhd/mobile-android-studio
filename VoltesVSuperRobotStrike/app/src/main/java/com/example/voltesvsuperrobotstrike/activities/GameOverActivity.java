@@ -15,6 +15,7 @@ import androidx.core.view.WindowInsetsCompat;
 import com.example.voltesvsuperrobotstrike.MainActivity;
 import com.example.voltesvsuperrobotstrike.R;
 import com.example.voltesvsuperrobotstrike.ScorePreferences;
+import com.example.voltesvsuperrobotstrike.audio.GameMusicManager;
 
 import java.util.Locale;
 
@@ -42,6 +43,7 @@ public class GameOverActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_game_over);
+        GameMusicManager.getInstance(this).playMenuMusic();
 
         readRunResult();
         bindRunResult();

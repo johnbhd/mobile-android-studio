@@ -14,6 +14,7 @@ import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
 import com.example.voltesvsuperrobotstrike.R;
+import com.example.voltesvsuperrobotstrike.audio.GameMusicManager;
 
 public class DifficultyActivity extends AppCompatActivity {
 
@@ -42,6 +43,7 @@ public class DifficultyActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_difficulty);
+        GameMusicManager.getInstance(this).playMenuMusic();
 
         applySystemBarInsets();
         readSelectionState(savedInstanceState);

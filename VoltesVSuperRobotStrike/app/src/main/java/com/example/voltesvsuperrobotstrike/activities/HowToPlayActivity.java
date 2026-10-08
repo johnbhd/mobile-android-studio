@@ -10,6 +10,7 @@ import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
 import com.example.voltesvsuperrobotstrike.R;
+import com.example.voltesvsuperrobotstrike.audio.GameMusicManager;
 
 public class HowToPlayActivity extends AppCompatActivity {
 
@@ -18,6 +19,7 @@ public class HowToPlayActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_how_to_play);
+        GameMusicManager.getInstance(this).playMenuMusic();
 
         applySystemBarInsets();
     }

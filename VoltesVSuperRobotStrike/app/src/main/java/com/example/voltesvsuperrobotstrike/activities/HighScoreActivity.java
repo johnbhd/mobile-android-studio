@@ -12,6 +12,7 @@ import androidx.core.view.WindowInsetsCompat;
 
 import com.example.voltesvsuperrobotstrike.R;
 import com.example.voltesvsuperrobotstrike.ScorePreferences;
+import com.example.voltesvsuperrobotstrike.audio.GameMusicManager;
 
 import java.util.Locale;
 
@@ -24,6 +25,7 @@ public class HighScoreActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_high_score);
+        GameMusicManager.getInstance(this).playMenuMusic();
 
         highScoreValueView = findViewById(R.id.high_score_value);
         findViewById(R.id.back_button).setOnClickListener((view) -> finish());

@@ -15,6 +15,7 @@ import com.example.voltesvsuperrobotstrike.activities.HighScoreActivity;
 import com.example.voltesvsuperrobotstrike.activities.HowToPlayActivity;
 import com.example.voltesvsuperrobotstrike.activities.MachineSelectionActivity;
 import com.example.voltesvsuperrobotstrike.activities.SplashActivity;
+import com.example.voltesvsuperrobotstrike.audio.GameMusicManager;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -33,6 +34,7 @@ public class MainActivity extends AppCompatActivity {
 
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_main);
+        GameMusicManager.getInstance(this).playMenuMusic();
 
         applySystemBarInsets();
         setupNavigation();
@@ -85,6 +87,7 @@ public class MainActivity extends AppCompatActivity {
         });
 
         findViewById(R.id.exit_button).setOnClickListener((view) -> {
+            GameMusicManager.getInstance(MainActivity.this).stopAll();
             finish();
         });
     }

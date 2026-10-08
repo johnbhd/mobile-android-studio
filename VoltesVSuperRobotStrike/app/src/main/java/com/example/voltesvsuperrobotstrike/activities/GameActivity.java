@@ -19,6 +19,7 @@ import androidx.core.view.WindowInsetsCompat;
 import com.example.voltesvsuperrobotstrike.MainActivity;
 import com.example.voltesvsuperrobotstrike.R;
 import com.example.voltesvsuperrobotstrike.ScorePreferences;
+import com.example.voltesvsuperrobotstrike.audio.GameMusicManager;
 import com.example.voltesvsuperrobotstrike.game.GameView;
 
 public class GameActivity extends AppCompatActivity {
@@ -61,6 +62,7 @@ public class GameActivity extends AppCompatActivity {
         gameView.setSkillStateListener(this::handleSkillStateChanged);
         gameView.setGameOverListener(this::handleGameOver);
         configureGameFromIntent(getIntent());
+        GameMusicManager.getInstance(this).startGameplayMusicForNewMission();
 
         if (savedInstanceState != null
                 && savedInstanceState.getBoolean(STATE_MENU_PAUSED, false)) {
@@ -74,6 +76,7 @@ public class GameActivity extends AppCompatActivity {
         setIntent(intent);
         gameOverScreenStarted = false;
         configureGameFromIntent(intent);
+        GameMusicManager.getInstance(this).startGameplayMusicForNewMission();
         hidePauseMenuAndResume();
     }
 
@@ -114,6 +117,7 @@ public class GameActivity extends AppCompatActivity {
             gameOverScreenStarted = true;
             hidePauseUi();
             gameView.pauseGame();
+            GameMusicManager.getInstance(this).switchToMenuMusic();
 
             int previousHighScore = ScorePreferences.getHighScore(this);
             boolean isNewHighScore = finalScore > previousHighScore;
@@ -190,6 +194,7 @@ public class GameActivity extends AppCompatActivity {
 
         updatePauseMenuSessionInfo();
         gameView.setMenuPaused(true);
+        GameMusicManager.getInstance(this).pauseGameplayForMenu();
         pauseButton.setVisibility(View.GONE);
         skillButton.setVisibility(View.GONE);
         pauseOverlay.setVisibility(View.VISIBLE);
@@ -203,6 +208,7 @@ public class GameActivity extends AppCompatActivity {
         if (gameView != null) {
             gameView.setMenuPaused(false);
         }
+        GameMusicManager.getInstance(this).resumeGameplayFromMenu();
         if (gameView != null && !gameView.isGameOver()) {
             skillButton.setVisibility(View.VISIBLE);
         }
@@ -306,6 +312,7 @@ public class GameActivity extends AppCompatActivity {
                 | Intent.FLAG_ACTIVITY_SINGLE_TOP);
 
         gameView.pauseGame();
+        GameMusicManager.getInstance(this).switchToMenuMusic();
         startActivity(intent);
     }
 
@@ -315,6 +322,7 @@ public class GameActivity extends AppCompatActivity {
                 | Intent.FLAG_ACTIVITY_SINGLE_TOP);
 
         gameView.pauseGame();
+        GameMusicManager.getInstance(this).switchToMenuMusic();
         startActivity(intent);
         finish();
     }
@@ -329,6 +337,7 @@ public class GameActivity extends AppCompatActivity {
                 | Intent.FLAG_ACTIVITY_SINGLE_TOP);
 
         gameView.pauseGame();
+        GameMusicManager.getInstance(this).switchToMenuMusic();
         startActivity(intent);
         finish();
     }
