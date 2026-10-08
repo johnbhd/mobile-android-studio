@@ -25,7 +25,8 @@ public final class EnemyBullet {
     private final Bitmap bitmap;
     private final float width;
     private final float height;
-    private final float verticalSpeedPixelsPerSecond;
+    private final float velocityX;
+    private final float velocityY;
     private final int visualType;
 
     private float x;
@@ -40,17 +41,41 @@ public final class EnemyBullet {
             float verticalSpeedPixelsPerSecond,
             int visualType
     ) {
+        this(
+                bitmap,
+                centerX,
+                y,
+                width,
+                height,
+                0f,
+                verticalSpeedPixelsPerSecond,
+                visualType
+        );
+    }
+
+    public EnemyBullet(
+            Bitmap bitmap,
+            float centerX,
+            float y,
+            float width,
+            float height,
+            float velocityX,
+            float velocityY,
+            int visualType
+    ) {
         this.bitmap = bitmap;
         this.width = width;
         this.height = height;
-        this.verticalSpeedPixelsPerSecond = verticalSpeedPixelsPerSecond;
+        this.velocityX = velocityX;
+        this.velocityY = velocityY;
         this.visualType = visualType;
         x = centerX - width / 2f;
         this.y = y;
     }
 
     public void update(float deltaSeconds) {
-        y += verticalSpeedPixelsPerSecond * deltaSeconds;
+        x += velocityX * deltaSeconds;
+        y += velocityY * deltaSeconds;
     }
 
     public void draw(Canvas canvas, Paint paint) {
@@ -85,6 +110,12 @@ public final class EnemyBullet {
 
     public boolean isOffScreen(float screenHeight) {
         return y >= screenHeight;
+    }
+
+    public boolean isOffScreen(float screenWidth, float screenHeight) {
+        return x + width < 0f
+                || x > screenWidth
+                || y > screenHeight;
     }
 
     public float getX() {

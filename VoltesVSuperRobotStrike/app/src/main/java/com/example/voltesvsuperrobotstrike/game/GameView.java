@@ -79,6 +79,29 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
     private static final float ELITE_BULLET_SPEED_HEIGHT_RATIO = 0.45f;
     private static final float SCOUT_DRONE_2_BULLET_SPEED_HEIGHT_RATIO = 0.40f;
     private static final float BOAZANIAN_BULLET_SPEED_HEIGHT_RATIO = 0.38f;
+    private static final float BOTTOM_CENTER_ZONE_LEFT_RATIO = 0.35f;
+    private static final float BOTTOM_CENTER_ZONE_RIGHT_RATIO = 0.65f;
+    private static final float BOTTOM_CENTER_ZONE_TOP_RATIO = 0.75f;
+    private static final float PLAYER_CAMPING_MOVEMENT_TOLERANCE_DP = 24f;
+    private static final float CAMPING_DURATION_EASY_SECONDS = 4f;
+    private static final float CAMPING_DURATION_NORMAL_SECONDS = 3f;
+    private static final float CAMPING_DURATION_HARD_SECONDS = 2.5f;
+    private static final float ANTI_CAMPING_COOLDOWN_EASY_SECONDS = 6f;
+    private static final float ANTI_CAMPING_COOLDOWN_NORMAL_SECONDS = 5f;
+    private static final float ANTI_CAMPING_COOLDOWN_HARD_SECONDS = 4f;
+    private static final float BOAZANIAN_ROTATION_SPEED_DEGREES_PER_SECOND = 150f;
+    private static final float HEAVY_BOMBER_DECISION_DELAY_MIN_SECONDS = 1.5f;
+    private static final float HEAVY_BOMBER_DECISION_DELAY_MAX_SECONDS = 2.8f;
+    private static final float HEAVY_BOMBER_MANEUVER_DURATION_MIN_SECONDS = 0.8f;
+    private static final float HEAVY_BOMBER_MANEUVER_DURATION_MAX_SECONDS = 1.5f;
+    private static final float HEAVY_BOMBER_RETREAT_DISTANCE_RATIO = 0.11f;
+    private static final float HEAVY_BOMBER_RETREAT_SPEED_RATIO = 0.13f;
+    private static final float HEAVY_BOMBER_STRAFE_SPEED_RATIO = 0.14f;
+    private static final int SPAWN_LANE_COUNT = 5;
+    private static final int[] SPAWN_LANE_WEIGHTS = {15, 20, 30, 20, 15};
+    private static final float[] SPAWN_LANE_CENTER_FRACTIONS = {
+            0.10f, 0.30f, 0.50f, 0.70f, 0.90f
+    };
     private static final int SCORE_SCOUT = 100;
     private static final int SCORE_HORNET = 150;
     private static final int SCORE_HEAVY_BOMBER = 250;
@@ -258,6 +281,13 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
     private float enemySpawnCooldownSeconds = ENEMY_FIRST_SPAWN_DELAY_SECONDS;
     private float gameplayTimeSeconds;
     private boolean alternatingSpawnFromLeft;
+    private int lastSpawnLane = -1;
+    private int pressureSpawnLane = -1;
+    private float bottomCenterCampTimerSeconds;
+    private float antiCampingCooldownSeconds;
+    private float campReferenceCenterX;
+    private float campReferenceCenterY;
+    private boolean campReferenceInitialized;
 
     private String selectedMachineId = "volt_crewzer";
     private String selectedDifficultyId = "normal";
@@ -353,6 +383,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
         enemySpawnCooldownSeconds = ENEMY_FIRST_SPAWN_DELAY_SECONDS;
         gameplayTimeSeconds = 0f;
         alternatingSpawnFromLeft = false;
+        resetAntiCampingState();
         releaseEnemyBitmaps();
         releaseEnemyProjectileBitmaps();
         score = 0;
@@ -480,6 +511,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
                 enemySpawnCooldownSeconds = ENEMY_FIRST_SPAWN_DELAY_SECONDS;
                 gameplayTimeSeconds = 0f;
                 alternatingSpawnFromLeft = false;
+                resetAntiCampingState();
                 releaseEnemyBitmaps();
                 releaseEnemyProjectileBitmaps();
                 releasePowerUpBitmaps();
@@ -585,6 +617,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
         Player currentPlayer = player;
         if (currentPlayer != null) {
             currentPlayer.update();
+            updateAntiCampingState(deltaSeconds);
         }
 
         updateAutomaticFire(deltaSeconds);
@@ -683,9 +716,178 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
 
     private void updateEnemies(float deltaSeconds) {
         for (Enemy enemy : enemies) {
+            boolean wasHeavyBomberManeuvering = enemy.isHeavyBomberManeuvering();
+            if (enemy.getType() == ENEMY_HEAVY_BOMBER) {
+                enemy.updateHeavyBomberDecisionTimer(deltaSeconds);
+            }
             enemy.update(deltaSeconds);
             enemy.updateFireCooldown(deltaSeconds);
+
+            if (enemy.getType() == ENEMY_HEAVY_BOMBER
+                    && !wasHeavyBomberManeuvering
+                    && enemy.isHeavyBomberDecisionReady()
+                    && enemy.getY() >= screenHeight * 0.25f
+                    && enemy.getY() <= screenHeight * 0.55f) {
+                enemy.resetHeavyBomberDecisionTimer(
+                        getHeavyBomberDecisionDelaySeconds()
+                );
+                if (enemyRandom.nextFloat() < getHeavyBomberManeuverChance()) {
+                    enemy.beginHeavyBomberManeuver(
+                            chooseHeavyBomberStrafeDirection(enemy),
+                            getHeavyBomberManeuverDurationSeconds(),
+                            screenHeight * HEAVY_BOMBER_RETREAT_DISTANCE_RATIO,
+                            screenHeight * HEAVY_BOMBER_RETREAT_SPEED_RATIO,
+                            screenWidth * HEAVY_BOMBER_STRAFE_SPEED_RATIO
+                    );
+                }
+            }
         }
+    }
+
+    private void resetAntiCampingState() {
+        lastSpawnLane = -1;
+        pressureSpawnLane = -1;
+        bottomCenterCampTimerSeconds = 0f;
+        antiCampingCooldownSeconds = 0f;
+        campReferenceCenterX = 0f;
+        campReferenceCenterY = 0f;
+        campReferenceInitialized = false;
+    }
+
+    private void updateAntiCampingState(float deltaSeconds) {
+        if (antiCampingCooldownSeconds > 0f) {
+            antiCampingCooldownSeconds = Math.max(
+                    0f,
+                    antiCampingCooldownSeconds - deltaSeconds
+            );
+        }
+
+        if (!isPlayerCampingBottomCenter()) {
+            bottomCenterCampTimerSeconds = 0f;
+            campReferenceInitialized = false;
+            return;
+        }
+
+        Player currentPlayer = player;
+        float currentCenterX = currentPlayer.getCenterX();
+        float currentCenterY = currentPlayer.getCenterY();
+        if (!campReferenceInitialized) {
+            campReferenceCenterX = currentCenterX;
+            campReferenceCenterY = currentCenterY;
+            campReferenceInitialized = true;
+            return;
+        }
+
+        float movementTolerancePixels = PLAYER_CAMPING_MOVEMENT_TOLERANCE_DP * density;
+        if (Math.abs(currentCenterX - campReferenceCenterX) > movementTolerancePixels
+                || Math.abs(currentCenterY - campReferenceCenterY) > movementTolerancePixels) {
+            bottomCenterCampTimerSeconds = 0f;
+            campReferenceCenterX = currentCenterX;
+            campReferenceCenterY = currentCenterY;
+            return;
+        }
+
+        bottomCenterCampTimerSeconds += deltaSeconds;
+        if (bottomCenterCampTimerSeconds < getCampingDurationSeconds()
+                || antiCampingCooldownSeconds > 0f) {
+            return;
+        }
+
+        pressureSpawnLane = choosePressureSpawnLane();
+        bottomCenterCampTimerSeconds = 0f;
+        antiCampingCooldownSeconds = getAntiCampingCooldownSeconds();
+    }
+
+    private boolean isPlayerCampingBottomCenter() {
+        Player currentPlayer = player;
+        if (currentPlayer == null || !currentPlayer.isPrepared()) {
+            return false;
+        }
+
+        float centerX = currentPlayer.getCenterX();
+        float centerY = currentPlayer.getCenterY();
+        return centerX >= screenWidth * BOTTOM_CENTER_ZONE_LEFT_RATIO
+                && centerX <= screenWidth * BOTTOM_CENTER_ZONE_RIGHT_RATIO
+                && centerY >= screenHeight * BOTTOM_CENTER_ZONE_TOP_RATIO;
+    }
+
+    private float getCampingDurationSeconds() {
+        if ("easy".equals(selectedDifficultyId)) {
+            return CAMPING_DURATION_EASY_SECONDS;
+        }
+        if ("hard".equals(selectedDifficultyId)) {
+            return CAMPING_DURATION_HARD_SECONDS;
+        }
+        return CAMPING_DURATION_NORMAL_SECONDS;
+    }
+
+    private float getAntiCampingCooldownSeconds() {
+        if ("easy".equals(selectedDifficultyId)) {
+            return ANTI_CAMPING_COOLDOWN_EASY_SECONDS;
+        }
+        if ("hard".equals(selectedDifficultyId)) {
+            return ANTI_CAMPING_COOLDOWN_HARD_SECONDS;
+        }
+        return ANTI_CAMPING_COOLDOWN_NORMAL_SECONDS;
+    }
+
+    private int choosePressureSpawnLane() {
+        Player currentPlayer = player;
+        if (currentPlayer == null || screenWidth <= 0) {
+            return SPAWN_LANE_COUNT / 2;
+        }
+
+        int playerLane = getLaneForFraction(currentPlayer.getCenterX() / screenWidth);
+        if (enemyRandom.nextBoolean()) {
+            if (playerLane == 0) {
+                return 1;
+            }
+            if (playerLane == SPAWN_LANE_COUNT - 1) {
+                return SPAWN_LANE_COUNT - 2;
+            }
+            return enemyRandom.nextBoolean() ? playerLane - 1 : playerLane + 1;
+        }
+        return playerLane;
+    }
+
+    private int getLaneForFraction(float fraction) {
+        int lane = Math.round(fraction * (SPAWN_LANE_COUNT - 1));
+        return Math.max(0, Math.min(SPAWN_LANE_COUNT - 1, lane));
+    }
+
+    private float getHeavyBomberDecisionDelaySeconds() {
+        return HEAVY_BOMBER_DECISION_DELAY_MIN_SECONDS
+                + enemyRandom.nextFloat()
+                * (HEAVY_BOMBER_DECISION_DELAY_MAX_SECONDS
+                - HEAVY_BOMBER_DECISION_DELAY_MIN_SECONDS);
+    }
+
+    private float getHeavyBomberManeuverDurationSeconds() {
+        return HEAVY_BOMBER_MANEUVER_DURATION_MIN_SECONDS
+                + enemyRandom.nextFloat()
+                * (HEAVY_BOMBER_MANEUVER_DURATION_MAX_SECONDS
+                - HEAVY_BOMBER_MANEUVER_DURATION_MIN_SECONDS);
+    }
+
+    private float getHeavyBomberManeuverChance() {
+        if ("easy".equals(selectedDifficultyId)) {
+            return 0.20f;
+        }
+        if ("hard".equals(selectedDifficultyId)) {
+            return 0.30f;
+        }
+        return 0.25f;
+    }
+
+    private int chooseHeavyBomberStrafeDirection(Enemy enemy) {
+        float centerX = enemy.getCenterX();
+        if (centerX < screenWidth * 0.30f) {
+            return 1;
+        }
+        if (centerX > screenWidth * 0.70f) {
+            return -1;
+        }
+        return enemyRandom.nextBoolean() ? -1 : 1;
     }
 
     private void removeOffScreenEnemies() {
@@ -748,7 +950,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
         float maximumX = screenWidth - bitmap.getWidth() - enemySideMarginPixels;
         float spawnX = Float.isNaN(preferredX)
                 ? minimumX + enemyRandom.nextFloat() * Math.max(0f, maximumX - minimumX)
-                : preferredX;
+                : preferredX * screenWidth - bitmap.getWidth() / 2f;
         if (maximumX <= minimumX) {
             spawnX = Math.max(0f, (screenWidth - bitmap.getWidth()) / 2f);
         } else {
@@ -778,6 +980,13 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
                 movementFrequency,
                 movementPhase
         );
+        if (enemyType == ENEMY_BOAZANIAN) {
+            enemy.setRotationSpeedDegreesPerSecond(
+                    BOAZANIAN_ROTATION_SPEED_DEGREES_PER_SECOND
+            );
+        } else if (enemyType == ENEMY_HEAVY_BOMBER) {
+            enemy.configureHeavyBomber(getHeavyBomberDecisionDelaySeconds());
+        }
         enemy.resetFireCooldown(getInitialEnemyFireDelaySeconds());
         enemies.add(enemy);
     }
@@ -845,7 +1054,15 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
 
     private float getPatternSpawnX(int spawnPattern, int index, int count) {
         if (count <= 1) {
-            return Float.NaN;
+            int lane = chooseSpawnLane();
+            return SPAWN_LANE_CENTER_FRACTIONS[lane];
+        }
+
+        if (pressureSpawnLane >= 0 && index == 0) {
+            int lane = pressureSpawnLane;
+            pressureSpawnLane = -1;
+            lastSpawnLane = lane;
+            return SPAWN_LANE_CENTER_FRACTIONS[lane];
         }
 
         if (spawnPattern == SPAWN_ALTERNATING) {
@@ -853,15 +1070,43 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
             if (index == 0) {
                 alternatingSpawnFromLeft = !alternatingSpawnFromLeft;
             }
-            return screenWidth * ((index == 0) == leftFirst ? 0.10f : 0.68f);
+            return (index == 0) == leftFirst ? 0.10f : 0.68f;
         }
 
         if (count == 2 && spawnPattern != SPAWN_ROW) {
-            return screenWidth * (index == 0 ? 0.16f : 0.68f);
+            return index == 0 ? 0.16f : 0.68f;
         }
 
         float fraction = (index + 1f) / (count + 1f);
-        return screenWidth * fraction;
+        return fraction;
+    }
+
+    private int chooseSpawnLane() {
+        if (pressureSpawnLane >= 0) {
+            int lane = pressureSpawnLane;
+            pressureSpawnLane = -1;
+            lastSpawnLane = lane;
+            return lane;
+        }
+
+        int lane = lastSpawnLane;
+        for (int attempt = 0; attempt < 3 && lane == lastSpawnLane; attempt++) {
+            int roll = enemyRandom.nextInt(100);
+            int cumulativeWeight = 0;
+            for (int index = 0; index < SPAWN_LANE_COUNT; index++) {
+                cumulativeWeight += SPAWN_LANE_WEIGHTS[index];
+                if (roll < cumulativeWeight) {
+                    lane = index;
+                    break;
+                }
+            }
+        }
+
+        if (lane < 0 || lane == lastSpawnLane) {
+            lane = (lastSpawnLane + 1) % SPAWN_LANE_COUNT;
+        }
+        lastSpawnLane = lane;
+        return lane;
     }
 
     private int selectBasicEscortType() {
@@ -887,7 +1132,14 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
             }
 
             if (!enemy.hasPendingFireShots()) {
-                enemy.beginFireSequence(getFireSequenceShotCount(enemy.getType()));
+                int shotCount = getFireSequenceShotCount(enemy.getType());
+                if (enemy.getType() == ENEMY_BOAZANIAN) {
+                    shotCount = Math.min(
+                            shotCount,
+                            maximumEnemyBullets - enemyBullets.size()
+                    );
+                }
+                enemy.beginFireSequence(shotCount);
             }
 
             spawnEnemyBullet(enemy);
@@ -901,6 +1153,16 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
     private int getFireSequenceShotCount(int enemyType) {
         if (enemyType == ENEMY_SCOUT_DRONE_2) {
             return 2;
+        }
+        if (enemyType == ENEMY_BOAZANIAN) {
+            int roll = enemyRandom.nextInt(100);
+            if ("easy".equals(selectedDifficultyId)) {
+                return roll < 80 ? 2 : 3;
+            }
+            if ("hard".equals(selectedDifficultyId)) {
+                return roll < 25 ? 2 : (roll < 65 ? 3 : 4);
+            }
+            return roll < 40 ? 2 : (roll < 80 ? 3 : 4);
         }
         if (enemyType == ENEMY_ELITE && enemyRandom.nextInt(4) == 0) {
             return 3;
@@ -919,6 +1181,18 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
                 : projectileBitmap.getHeight();
         float spawnY = enemy.getBottom() - height * 0.2f;
         float speed = screenHeight * getEnemyBulletSpeedHeightRatio(enemyType);
+        float velocityX = 0f;
+        float velocityY = speed;
+        if (enemyType == ENEMY_BOAZANIAN) {
+            double angleRadians = Math.toRadians(
+                    getBoazanianShotAngle(
+                            enemy.getFireSequenceShotCount(),
+                            enemy.getFireSequenceShotIndex()
+                    )
+            );
+            velocityX = (float) Math.cos(angleRadians) * speed;
+            velocityY = (float) Math.sin(angleRadians) * speed;
+        }
 
         enemyBullets.add(new EnemyBullet(
                 projectileBitmap,
@@ -926,9 +1200,36 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
                 spawnY,
                 width,
                 height,
-                speed,
+                velocityX,
+                velocityY,
                 getEnemyBulletVisualType(enemyType)
         ));
+    }
+
+    private float getBoazanianShotAngle(int shotCount, int shotIndex) {
+        if (shotCount <= 2) {
+            return shotIndex == 0 ? 70f : 110f;
+        }
+        if (shotCount == 3) {
+            switch (shotIndex) {
+                case 0:
+                    return 65f;
+                case 1:
+                    return 90f;
+                default:
+                    return 115f;
+            }
+        }
+        switch (shotIndex) {
+            case 0:
+                return 55f;
+            case 1:
+                return 75f;
+            case 2:
+                return 105f;
+            default:
+                return 125f;
+        }
     }
 
     private float getInitialEnemyFireDelaySeconds() {
@@ -2188,7 +2489,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
 
     private void removeOffScreenEnemyBullets() {
         for (int index = enemyBullets.size() - 1; index >= 0; index--) {
-            if (enemyBullets.get(index).isOffScreen(screenHeight)) {
+            if (enemyBullets.get(index).isOffScreen(screenWidth, screenHeight)) {
                 enemyBullets.remove(index);
             }
         }
