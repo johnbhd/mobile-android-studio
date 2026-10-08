@@ -1,34 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
 <selector xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <item android:state_selected="true">
-        <shape android:shape="rectangle">
-            <solid android:color="@color/menu_gold" />
-            <corners android:radius="@dimen/main_menu_corner_radius" />
-            <stroke
-                android:width="1dp"
-                android:color="@color/menu_border" />
-        </shape>
-    </item>
+    <item
+        android:state_pressed="true"
+        android:state_selected="true"
+        android:drawable="@drawable/menu_primary_pressed" />
 
-    <item android:state_pressed="true">
-        <shape android:shape="rectangle">
-            <solid android:color="@color/menu_secondary_pressed" />
-            <corners android:radius="@dimen/main_menu_corner_radius" />
-            <stroke
-                android:width="1dp"
-                android:color="@color/machine_cyan" />
-        </shape>
-    </item>
+    <item
+        android:state_selected="true"
+        android:drawable="@drawable/menu_primary_normal" />
 
-    <item>
-        <shape android:shape="rectangle">
-            <solid android:color="@color/menu_secondary_fill" />
-            <corners android:radius="@dimen/main_menu_corner_radius" />
-            <stroke
-                android:width="1dp"
-                android:color="@color/machine_cyan" />
-        </shape>
-    </item>
+    <item
+        android:state_pressed="true"
+        android:drawable="@drawable/menu_secondary_pressed" />
+
+    <item android:drawable="@drawable/menu_secondary_normal" />
 
 </selector>

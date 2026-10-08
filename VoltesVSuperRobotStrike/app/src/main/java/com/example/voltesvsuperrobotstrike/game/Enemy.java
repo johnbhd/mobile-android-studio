@@ -34,6 +34,7 @@ public final class Enemy {
     private int pendingFireShots;
     private int fireSequenceShotCount;
     private int fireSequenceShotIndex;
+    private boolean boazanianFireRightNext = true;
     private float rotationDegrees;
     private float rotationSpeedDegreesPerSecond;
     private boolean heavyBomberMovementEnabled;
@@ -221,6 +222,12 @@ public final class Enemy {
 
     public int getFireSequenceShotIndex() {
         return fireSequenceShotIndex;
+    }
+
+    public boolean consumeBoazanianFireRightNext() {
+        boolean fireRight = boazanianFireRightNext;
+        boazanianFireRightNext = !boazanianFireRightNext;
+        return fireRight;
     }
 
     public void setRotationSpeedDegreesPerSecond(float rotationSpeedDegreesPerSecond) {

@@ -106,8 +106,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
     private static final float ELITE_FIRE_INTERVAL_MAX_SECONDS = 1.9f;
     private static final float SCOUT_DRONE_2_FIRE_INTERVAL_MIN_SECONDS = 1.9f;
     private static final float SCOUT_DRONE_2_FIRE_INTERVAL_MAX_SECONDS = 2.5f;
-    private static final float BOAZANIAN_FIRE_INTERVAL_MIN_SECONDS = 1.8f;
-    private static final float BOAZANIAN_FIRE_INTERVAL_MAX_SECONDS = 2.4f;
+    private static final float BOAZANIAN_FIRE_INTERVAL_SECONDS = 0.5f;
     private static final float ENEMY_BURST_SHOT_INTERVAL_SECONDS = 0.20f;
     private static final float SCOUT_BULLET_SPEED_HEIGHT_RATIO = 0.42f;
     private static final float HORNET_BULLET_SPEED_HEIGHT_RATIO = 0.48f;
@@ -2006,14 +2005,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
             return 2;
         }
         if (enemyType == ENEMY_BOAZANIAN) {
-            int roll = enemyRandom.nextInt(100);
-            if ("easy".equals(selectedDifficultyId)) {
-                return roll < 80 ? 2 : 3;
-            }
-            if ("hard".equals(selectedDifficultyId)) {
-                return roll < 25 ? 2 : (roll < 65 ? 3 : 4);
-            }
-            return roll < 40 ? 2 : (roll < 80 ? 3 : 4);
+            return 1;
         }
         if (enemyType == ENEMY_ELITE && enemyRandom.nextInt(4) == 0) {
             return 3;
@@ -2036,10 +2028,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
         float velocityY = speed;
         if (enemyType == ENEMY_BOAZANIAN) {
             double angleRadians = Math.toRadians(
-                    getBoazanianShotAngle(
-                            enemy.getFireSequenceShotCount(),
-                            enemy.getFireSequenceShotIndex()
-                    )
+                    getBoazanianShotAngle(enemy.consumeBoazanianFireRightNext())
             );
             velocityX = (float) Math.cos(angleRadians) * speed;
             velocityY = (float) Math.sin(angleRadians) * speed;
@@ -2057,30 +2046,8 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
         ));
     }
 
-    private float getBoazanianShotAngle(int shotCount, int shotIndex) {
-        if (shotCount <= 2) {
-            return shotIndex == 0 ? 70f : 110f;
-        }
-        if (shotCount == 3) {
-            switch (shotIndex) {
-                case 0:
-                    return 65f;
-                case 1:
-                    return 90f;
-                default:
-                    return 115f;
-            }
-        }
-        switch (shotIndex) {
-            case 0:
-                return 55f;
-            case 1:
-                return 75f;
-            case 2:
-                return 105f;
-            default:
-                return 125f;
-        }
+    private float getBoazanianShotAngle(boolean fireRight) {
+        return fireRight ? 45f : 135f;
     }
 
     private float getInitialEnemyFireDelaySeconds() {
@@ -2090,6 +2057,10 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
     }
 
     private float getNextEnemyFireIntervalSeconds(int enemyType) {
+        if (enemyType == ENEMY_BOAZANIAN) {
+            return BOAZANIAN_FIRE_INTERVAL_SECONDS;
+        }
+
         float minimumInterval = getEnemyFireIntervalMinimumSeconds(enemyType);
         float maximumInterval = getEnemyFireIntervalMaximumSeconds(enemyType);
         float baseInterval = minimumInterval
@@ -2110,7 +2081,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
             case ENEMY_SCOUT_DRONE_2:
                 return SCOUT_DRONE_2_FIRE_INTERVAL_MIN_SECONDS;
             case ENEMY_BOAZANIAN:
-                return BOAZANIAN_FIRE_INTERVAL_MIN_SECONDS;
+                return BOAZANIAN_FIRE_INTERVAL_SECONDS;
             case ENEMY_SCOUT:
             default:
                 return SCOUT_FIRE_INTERVAL_MIN_SECONDS;
@@ -2130,7 +2101,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
             case ENEMY_SCOUT_DRONE_2:
                 return SCOUT_DRONE_2_FIRE_INTERVAL_MAX_SECONDS;
             case ENEMY_BOAZANIAN:
-                return BOAZANIAN_FIRE_INTERVAL_MAX_SECONDS;
+                return BOAZANIAN_FIRE_INTERVAL_SECONDS;
             case ENEMY_SCOUT:
             default:
                 return SCOUT_FIRE_INTERVAL_MAX_SECONDS;
@@ -3315,28 +3286,38 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
         }
 
         playerLives = Math.max(0, playerLives - 1);
-        playerInvulnerable = true;
-        playerInvulnerabilityTimerSeconds = PLAYER_INVULNERABILITY_SECONDS;
         updateLivesLine();
 
         if (playerLives == 0) {
-            gameOver = true;
-            gameOverTimerSeconds = GAME_OVER_HOLD_SECONDS;
-            finalScore = score;
-            playerInvulnerable = false;
-            playerInvulnerabilityTimerSeconds = 0f;
-            skillActive = false;
-            skillRemainingSeconds = 0f;
-            skillActivationRequested = false;
-            skillActivationEffectRemainingSeconds = 0f;
-            bombardmentBombs.clear();
-            skillExplosions.clear();
-            playerBullets.clear();
-            enemyBullets.clear();
-            powerUps.clear();
-            powerUpCollectEffects.clear();
-            notifySkillStateChangedIfNeeded();
+            triggerGameOver();
+            return;
         }
+
+        playerInvulnerable = true;
+        playerInvulnerabilityTimerSeconds = PLAYER_INVULNERABILITY_SECONDS;
+    }
+
+    private void triggerGameOver() {
+        if (gameOver) {
+            return;
+        }
+
+        gameOver = true;
+        gameOverTimerSeconds = GAME_OVER_HOLD_SECONDS;
+        finalScore = score;
+        playerInvulnerable = false;
+        playerInvulnerabilityTimerSeconds = 0f;
+        skillActive = false;
+        skillRemainingSeconds = 0f;
+        skillActivationRequested = false;
+        skillActivationEffectRemainingSeconds = 0f;
+        bombardmentBombs.clear();
+        skillExplosions.clear();
+        playerBullets.clear();
+        enemyBullets.clear();
+        powerUps.clear();
+        powerUpCollectEffects.clear();
+        notifySkillStateChangedIfNeeded();
     }
 
     private void updatePlayerInvulnerability(float deltaSeconds) {
@@ -3694,6 +3675,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
             return;
         }
 
+        int collidingProjectileCount = 0;
         for (int index = enemyBullets.size() - 1; index >= 0; index--) {
             EnemyBullet enemyBullet = enemyBullets.get(index);
             if (!intersectsPlayerAndEnemyBullet(currentPlayer, enemyBullet)) {
@@ -3701,11 +3683,42 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
             }
 
             enemyBullets.remove(index);
-            if (!isMachineSkillProtectingPlayer()
-                    && canPlayerTakeDamage(currentPlayer)) {
-                damagePlayer();
-            }
+            collidingProjectileCount++;
         }
+
+        if (collidingProjectileCount > 0) {
+            applyEnemyProjectileDamage(collidingProjectileCount);
+        }
+    }
+
+    private void applyEnemyProjectileDamage(int collidingProjectileCount) {
+        if (gameOver
+                || playerLives <= 0
+                || playerInvulnerable
+                || isMachineSkillProtectingPlayer()) {
+            return;
+        }
+
+        int damageCount = collidingProjectileCount;
+        if (shieldActive) {
+            shieldActive = false;
+            damageCount--;
+            updatePowerUpStatusLine();
+        }
+
+        if (damageCount <= 0) {
+            return;
+        }
+
+        playerLives = Math.max(0, playerLives - damageCount);
+        updateLivesLine();
+        if (playerLives == 0) {
+            triggerGameOver();
+            return;
+        }
+
+        playerInvulnerable = true;
+        playerInvulnerabilityTimerSeconds = PLAYER_INVULNERABILITY_SECONDS;
     }
 
     private void removeOffScreenEnemyBullets() {

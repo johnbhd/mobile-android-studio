@@ -191,6 +191,7 @@
                     android:layout_width="@dimen/machine_select_button_width"
                     android:layout_height="@dimen/machine_select_button_height"
                     android:background="@drawable/machine_select_button"
+                    android:backgroundTint="@null"
                     android:fontFamily="sans-serif-condensed"
                     android:gravity="center"
                     android:includeFontPadding="false"
@@ -202,6 +203,7 @@
                     android:textColor="@color/machine_select_button_text"
                     android:textSize="10sp"
                     android:textStyle="bold"
+                    app:backgroundTint="@null"
                     app:layout_constraintBottom_toBottomOf="parent"
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintTop_toTopOf="parent" />
@@ -274,6 +276,7 @@
                     android:layout_width="@dimen/machine_select_button_width"
                     android:layout_height="@dimen/machine_select_button_height"
                     android:background="@drawable/machine_select_button"
+                    android:backgroundTint="@null"
                     android:fontFamily="sans-serif-condensed"
                     android:gravity="center"
                     android:includeFontPadding="false"
@@ -285,6 +288,7 @@
                     android:textColor="@color/machine_select_button_text"
                     android:textSize="10sp"
                     android:textStyle="bold"
+                    app:backgroundTint="@null"
                     app:layout_constraintBottom_toBottomOf="parent"
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintTop_toTopOf="parent" />
@@ -357,6 +361,7 @@
                     android:layout_width="@dimen/machine_select_button_width"
                     android:layout_height="@dimen/machine_select_button_height"
                     android:background="@drawable/machine_select_button"
+                    android:backgroundTint="@null"
                     android:fontFamily="sans-serif-condensed"
                     android:gravity="center"
                     android:includeFontPadding="false"
@@ -368,6 +373,7 @@
                     android:textColor="@color/machine_select_button_text"
                     android:textSize="10sp"
                     android:textStyle="bold"
+                    app:backgroundTint="@null"
                     app:layout_constraintBottom_toBottomOf="parent"
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintTop_toTopOf="parent" />
@@ -382,6 +388,7 @@
         android:layout_width="0dp"
         android:layout_height="@dimen/machine_selection_continue_height"
         android:background="@drawable/menu_button_primary"
+        android:backgroundTint="@null"
         android:fontFamily="sans-serif-condensed"
         android:letterSpacing="0.08"
         android:stateListAnimator="@null"
@@ -389,6 +396,7 @@
         android:textColor="@color/menu_text_primary"
         android:textSize="15sp"
         android:textStyle="bold"
+        app:backgroundTint="@null"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent" />
