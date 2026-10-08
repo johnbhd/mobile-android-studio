@@ -105,6 +105,12 @@ public class ScrollingBackground {
             }
 
             for (Segment segment : segments) {
+                float segmentTop = segment.y;
+                float segmentBottom = segmentTop + segment.bitmap.getHeight();
+                if (segmentBottom <= 0f || segmentTop >= screenHeight) {
+                    continue;
+                }
+
                 canvas.drawBitmap(segment.bitmap, 0f, segment.y, bitmapPaint);
             }
         }

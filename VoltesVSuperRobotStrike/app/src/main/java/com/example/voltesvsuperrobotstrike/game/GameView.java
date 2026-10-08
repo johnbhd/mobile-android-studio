@@ -712,7 +712,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
         try {
             surface.setFrameRate(
                     TARGET_FRAME_RATE,
-                    Surface.FRAME_RATE_COMPATIBILITY_DEFAULT
+                    Surface.FRAME_RATE_COMPATIBILITY_FIXED_SOURCE
             );
         } catch (IllegalArgumentException | IllegalStateException ignored) {
             // The hint is optional; keep the existing Canvas pacing if it cannot apply.
@@ -950,7 +950,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
         boolean canvasLocked = false;
 
         try {
-            canvas = surfaceHolder.lockCanvas();
+            canvas = surfaceHolder.lockHardwareCanvas();
 
             if (canvas == null) {
                 return;
