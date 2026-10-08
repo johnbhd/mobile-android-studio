@@ -51,8 +51,8 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
     private static final float PANZER_PROJECTILE_SCALE = 1.70f;
     private static final float PANZER_PROJECTILE_SPEED_MULTIPLIER = 0.88f;
     private static final float PANZER_FIRE_INTERVAL_MULTIPLIER = 1.20f;
-    private static final float FRIGATE_SKILL_DURATION_SECONDS = 5f;
-    private static final float FRIGATE_BARRAGE_INTERVAL_SECONDS = 0.12f;
+    private static final float FRIGATE_SKILL_DURATION_SECONDS = 12f;
+    private static final float FRIGATE_TWIN_SHOT_INTERVAL_SECONDS = 0.12f;
     private static final float LANDER_SKILL_DURATION_SECONDS = 15f;
     private static final float LANDER_SHIELD_RADIUS_MULTIPLIER = 0.72f;
     private static final float RAPID_FIRE_DURATION_SECONDS = 8f;
@@ -3510,7 +3510,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
 
     private float getCurrentPlayerFireIntervalSeconds() {
         if (isFrigateSkillActive()) {
-            return FRIGATE_BARRAGE_INTERVAL_SECONDS;
+            return FRIGATE_TWIN_SHOT_INTERVAL_SECONDS;
         }
 
         float intervalSeconds = AUTO_FIRE_INTERVAL_SECONDS;
@@ -3540,8 +3540,9 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
             return;
         }
 
-        boolean twinShotActive = !isFrigateSkillActive()
-                && (isCrewzerSkillActive() || twinShotTimerSeconds > 0f);
+        boolean twinShotActive = isFrigateSkillActive()
+                || isCrewzerSkillActive()
+                || twinShotTimerSeconds > 0f;
         Bitmap shotBitmap = isFrigateSkillActive()
                 ? frigateBarrageShotBitmap
                 : projectileBitmap;
