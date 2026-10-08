@@ -31,6 +31,8 @@
         android:minWidth="0dp"
         android:paddingStart="6dp"
         android:paddingEnd="6dp"
+        android:paddingTop="4dp"
+        android:paddingBottom="4dp"
         android:stateListAnimator="@null"
         android:textColor="@color/white"
         android:textSize="12sp"

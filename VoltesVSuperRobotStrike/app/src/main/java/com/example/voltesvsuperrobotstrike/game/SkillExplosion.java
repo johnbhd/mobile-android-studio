@@ -1,11 +1,13 @@
 package com.example.voltesvsuperrobotstrike.game;
 
+import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 
 /** Short-lived Canvas fallback for the Bomber skill explosion. */
 public final class SkillExplosion {
 
+    private final Bitmap bitmap;
     private final float centerX;
     private final float centerY;
     private final float radius;
@@ -13,11 +15,13 @@ public final class SkillExplosion {
     private float elapsedSeconds;
 
     public SkillExplosion(
+            Bitmap bitmap,
             float centerX,
             float centerY,
             float radius,
             float durationSeconds
     ) {
+        this.bitmap = bitmap;
         this.centerX = centerX;
         this.centerY = centerY;
         this.radius = Math.max(1f, radius);
@@ -40,6 +44,21 @@ public final class SkillExplosion {
         int previousAlpha = paint.getAlpha();
         Paint.Style previousStyle = paint.getStyle();
         float previousStrokeWidth = paint.getStrokeWidth();
+
+        if (bitmap != null && !bitmap.isRecycled()) {
+            paint.setAlpha(alpha);
+            canvas.drawBitmap(
+                    bitmap,
+                    centerX - bitmap.getWidth() / 2f,
+                    centerY - bitmap.getHeight() / 2f,
+                    paint
+            );
+            paint.setColor(previousColor);
+            paint.setAlpha(previousAlpha);
+            paint.setStyle(previousStyle);
+            paint.setStrokeWidth(previousStrokeWidth);
+            return;
+        }
 
         paint.setColor(0xFFFFD447);
         paint.setAlpha(alpha);

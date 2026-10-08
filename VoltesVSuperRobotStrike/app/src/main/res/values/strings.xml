@@ -81,6 +81,7 @@ GameView and gameplay systems will be implemented in a later task.</string>
     <string name="game_skill_panzer">POWER</string>
     <string name="game_skill_frigate">BARRAGE</string>
     <string name="game_skill_lander">SHIELD</string>
+    <string name="game_skill_button_ready">%1$s&#10;READY</string>
     <string name="game_skill_button_timer">%1$s&#10;%2$d</string>
     <string name="game_skill_button_ready_description">Activate %1$s</string>
     <string name="game_skill_button_active_description">%1$s active, %2$d seconds remaining</string>

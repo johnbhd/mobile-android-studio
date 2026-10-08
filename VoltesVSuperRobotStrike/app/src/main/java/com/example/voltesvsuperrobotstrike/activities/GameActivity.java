@@ -1,6 +1,7 @@
 package com.example.voltesvsuperrobotstrike.activities;
 
 import android.content.Intent;
+import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.FrameLayout;
@@ -10,6 +11,7 @@ import android.widget.TextView;
 import androidx.activity.EdgeToEdge;
 import androidx.activity.OnBackPressedCallback;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.content.ContextCompat;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
@@ -47,6 +49,11 @@ public class GameActivity extends AppCompatActivity {
         pauseMachineName = findViewById(R.id.pause_machine_name);
         pauseDifficultyName = findViewById(R.id.pause_difficulty_name);
         pausePilotImage = findViewById(R.id.pause_pilot_image);
+        skillButton.setText(getString(
+                R.string.game_skill_button_ready,
+                getString(R.string.game_skill_crewzer)
+        ));
+        updateSkillButtonArtwork(MachineSelectionActivity.MACHINE_CREWZER);
 
         applySystemBarInsets();
         setupPauseNavigation();
@@ -88,6 +95,8 @@ public class GameActivity extends AppCompatActivity {
 
         this.selectedMachineId = selectedMachineId;
         this.selectedDifficultyId = selectedDifficultyId;
+        updateSkillButtonArtwork(selectedMachineId);
+        skillButton.setVisibility(View.VISIBLE);
         gameView.configureGame(selectedMachineId, selectedDifficultyId);
         updatePauseMenuSessionInfo();
     }
@@ -218,7 +227,10 @@ public class GameActivity extends AppCompatActivity {
             boolean ready = skillState == GameView.SkillState.READY;
             skillButton.setEnabled(ready && gameView.isSkillInputReady());
             if (skillState == GameView.SkillState.READY) {
-                skillButton.setText(skillLabel);
+                skillButton.setText(getString(
+                        R.string.game_skill_button_ready,
+                        skillLabel
+                ));
                 skillButton.setContentDescription(
                         getString(R.string.game_skill_button_ready_description, skillLabel)
                 );
@@ -236,6 +248,48 @@ public class GameActivity extends AppCompatActivity {
                 );
             }
         });
+    }
+
+    private void updateSkillButtonArtwork(String machineId) {
+        if (skillButton == null) {
+            return;
+        }
+
+        Drawable artwork = ContextCompat.getDrawable(
+                this,
+                getSkillArtworkResource(machineId)
+        );
+        if (artwork == null) {
+            skillButton.setCompoundDrawables(null, null, null, null);
+            return;
+        }
+
+        int iconSize = getResources().getDimensionPixelSize(
+                R.dimen.game_skill_icon_size
+        );
+        artwork.setBounds(0, 0, iconSize, iconSize);
+        skillButton.setCompoundDrawables(null, artwork, null, null);
+        skillButton.setCompoundDrawablePadding(
+                getResources().getDimensionPixelSize(
+                        R.dimen.game_skill_icon_spacing
+                )
+        );
+    }
+
+    private int getSkillArtworkResource(String machineId) {
+        switch (machineId) {
+            case MachineSelectionActivity.MACHINE_BOMBER:
+                return R.drawable.skill_bomber_burst_strike;
+            case MachineSelectionActivity.MACHINE_PANZER:
+                return R.drawable.skill_panzer_power_shot;
+            case MachineSelectionActivity.MACHINE_FRIGATE:
+                return R.drawable.skill_frigate_rapid_barrage;
+            case MachineSelectionActivity.MACHINE_LANDER:
+                return R.drawable.skill_lander_energy_shield;
+            case MachineSelectionActivity.MACHINE_CREWZER:
+            default:
+                return R.drawable.skill_crewzer_speed_burst;
+        }
     }
 
     private void restartMission() {

@@ -328,10 +328,18 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
     private Bitmap twinShotPowerUpBitmap;
     private Bitmap powerUpCollectEffectBitmap;
     private Bitmap heartLiveBitmap;
+    private Bitmap crewzerAuraBitmap;
+    private Bitmap bombardmentBombBitmap;
+    private Bitmap bombardmentExplosionBitmap;
+    private Bitmap panzerPowerShotBitmap;
+    private Bitmap frigateBarrageShotBitmap;
+    private Bitmap landerEnergyShieldBitmap;
     private int preparedPowerUpWidth;
     private int preparedPowerUpHeight;
     private int preparedHeartLiveWidth;
     private int preparedHeartLiveHeight;
+    private int preparedSkillEffectWidth;
+    private int preparedSkillEffectHeight;
     private float enemySpawnCooldownSeconds = ENEMY_FIRST_SPAWN_DELAY_SECONDS;
     private float gameplayTimeSeconds;
     private boolean alternatingSpawnFromLeft;
@@ -449,7 +457,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
     }
 
     public void requestSkillActivation() {
-        if (menuPaused || gameOver || !running || !surfaceReady) {
+        if (menuPaused || gameOver || !activityResumed || !surfaceReady) {
             return;
         }
 
@@ -480,7 +488,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
     }
 
     public boolean isSkillInputReady() {
-        return running && surfaceReady && !menuPaused && !gameOver;
+        return activityResumed && surfaceReady && !menuPaused && !gameOver;
     }
 
     private void initializePaints() {
@@ -609,6 +617,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
         prepareEnemyProjectileBitmapsIfReady();
         preparePowerUpBitmapsIfReady();
         prepareHeartLiveBitmapIfReady();
+        prepareSkillEffectBitmapsIfReady();
 
         updateDifficultyLine();
     }
@@ -644,6 +653,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
         releaseEnemyProjectileBitmaps();
         releasePowerUpBitmaps();
         releaseHeartLiveBitmap();
+        releaseSkillEffectBitmaps();
 
         Player currentPlayer = player;
         if (currentPlayer != null) {
@@ -658,6 +668,8 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
         surfaceReady = true;
         updateSurfaceDimensions(getWidth(), getHeight());
         startGameThreadIfReady();
+        lastNotifiedSkillState = null;
+        notifySkillStateChangedIfNeeded();
     }
 
     @Override
@@ -713,6 +725,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
                 releaseEnemyProjectileBitmaps();
                 releasePowerUpBitmaps();
                 releaseHeartLiveBitmap();
+                releaseSkillEffectBitmaps();
             }
 
             prepareProjectileBitmapIfReady();
@@ -720,6 +733,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
             prepareEnemyProjectileBitmapsIfReady();
             preparePowerUpBitmapsIfReady();
             prepareHeartLiveBitmapIfReady();
+            prepareSkillEffectBitmapsIfReady();
         }
 
         if (restartGameThread) {
@@ -957,6 +971,20 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
         int previousAlpha = skillEffectPaint.getAlpha();
         Paint.Style previousStyle = skillEffectPaint.getStyle();
 
+        if (crewzerAuraBitmap != null && !crewzerAuraBitmap.isRecycled()) {
+            skillEffectPaint.setAlpha(190);
+            canvas.drawBitmap(
+                    crewzerAuraBitmap,
+                    currentPlayer.getCenterX() - crewzerAuraBitmap.getWidth() / 2f,
+                    currentPlayer.getCenterY() - crewzerAuraBitmap.getHeight() / 2f,
+                    skillEffectPaint
+            );
+            skillEffectPaint.setColor(previousColor);
+            skillEffectPaint.setAlpha(previousAlpha);
+            skillEffectPaint.setStyle(previousStyle);
+            return;
+        }
+
         float radius = Math.max(
                 currentPlayer.getWidth(),
                 currentPlayer.getHeight()
@@ -996,6 +1024,21 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
         int previousColor = skillEffectPaint.getColor();
         int previousAlpha = skillEffectPaint.getAlpha();
         Paint.Style previousStyle = skillEffectPaint.getStyle();
+
+        if (landerEnergyShieldBitmap != null
+                && !landerEnergyShieldBitmap.isRecycled()) {
+            skillEffectPaint.setAlpha(200);
+            canvas.drawBitmap(
+                    landerEnergyShieldBitmap,
+                    currentPlayer.getCenterX() - landerEnergyShieldBitmap.getWidth() / 2f,
+                    currentPlayer.getCenterY() - landerEnergyShieldBitmap.getHeight() / 2f,
+                    skillEffectPaint
+            );
+            skillEffectPaint.setColor(previousColor);
+            skillEffectPaint.setAlpha(previousAlpha);
+            skillEffectPaint.setStyle(previousStyle);
+            return;
+        }
 
         float radius = Math.max(
                 currentPlayer.getWidth(),
@@ -1174,7 +1217,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
         float height = Math.max(1f, screenHeight * BOMBER_BOMB_HEIGHT_RATIO);
         float top = currentPlayer.getCenterY() - currentPlayer.getHeight() / 2f - height;
         bombardmentBombs.add(new BombardmentBomb(
-                null,
+                bombardmentBombBitmap,
                 currentPlayer.getCenterX(),
                 top,
                 width,
@@ -1219,6 +1262,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
         bombardmentBombs.remove(bombIndex);
         float radius = screenWidth * BOMBER_EXPLOSION_RADIUS_RATIO;
         skillExplosions.add(new SkillExplosion(
+                bombardmentExplosionBitmap,
                 bomb.getCenterX(),
                 bomb.getCenterY(),
                 radius,
@@ -2667,6 +2711,112 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
         preparedPowerUpHeight = 0;
     }
 
+    private void prepareSkillEffectBitmapsIfReady() {
+        if (screenWidth <= 0 || screenHeight <= 0) {
+            return;
+        }
+
+        if (preparedSkillEffectWidth == screenWidth
+                && preparedSkillEffectHeight == screenHeight
+                && areSkillEffectBitmapsReady()) {
+            return;
+        }
+
+        releaseSkillEffectBitmaps();
+        crewzerAuraBitmap = loadScaledSkillEffectBitmap(
+                R.drawable.skill_crewzer_aura,
+                0.30f
+        );
+        bombardmentBombBitmap = loadScaledSkillEffectBitmap(
+                R.drawable.skill_bombardment_bomb,
+                BOMBER_BOMB_WIDTH_RATIO
+        );
+        bombardmentExplosionBitmap = loadScaledSkillEffectBitmap(
+                R.drawable.skill_bombardment_explosion,
+                BOMBER_EXPLOSION_RADIUS_RATIO * 2f
+        );
+        panzerPowerShotBitmap = loadScaledSkillEffectBitmap(
+                R.drawable.skill_panzer_power_shot_effect,
+                0.12f
+        );
+        frigateBarrageShotBitmap = loadScaledSkillEffectBitmap(
+                R.drawable.skill_frigate_barrage_shot,
+                0.06f
+        );
+        landerEnergyShieldBitmap = loadScaledSkillEffectBitmap(
+                R.drawable.skill_lander_energy_shield_effect,
+                0.30f
+        );
+        preparedSkillEffectWidth = screenWidth;
+        preparedSkillEffectHeight = screenHeight;
+    }
+
+    private Bitmap loadScaledSkillEffectBitmap(
+            int resourceId,
+            float widthRatio
+    ) {
+        Bitmap sourceBitmap = BitmapFactory.decodeResource(
+                getResources(),
+                resourceId
+        );
+        if (sourceBitmap == null
+                || sourceBitmap.getWidth() <= 0
+                || sourceBitmap.getHeight() <= 0) {
+            return null;
+        }
+
+        Bitmap croppedBitmap = cropToOpaqueBounds(sourceBitmap);
+        if (croppedBitmap != sourceBitmap) {
+            sourceBitmap.recycle();
+        }
+
+        int targetWidth = Math.max(
+                1,
+                Math.round(screenWidth * widthRatio)
+        );
+        int targetHeight = Math.max(
+                1,
+                Math.round(croppedBitmap.getHeight()
+                        * (targetWidth / (float) croppedBitmap.getWidth()))
+        );
+        Bitmap scaledBitmap = Bitmap.createScaledBitmap(
+                croppedBitmap,
+                targetWidth,
+                targetHeight,
+                true
+        );
+        if (scaledBitmap != croppedBitmap) {
+            croppedBitmap.recycle();
+        }
+        return scaledBitmap;
+    }
+
+    private boolean areSkillEffectBitmapsReady() {
+        return crewzerAuraBitmap != null
+                && bombardmentBombBitmap != null
+                && bombardmentExplosionBitmap != null
+                && panzerPowerShotBitmap != null
+                && frigateBarrageShotBitmap != null
+                && landerEnergyShieldBitmap != null;
+    }
+
+    private void releaseSkillEffectBitmaps() {
+        releaseBitmap(crewzerAuraBitmap);
+        releaseBitmap(bombardmentBombBitmap);
+        releaseBitmap(bombardmentExplosionBitmap);
+        releaseBitmap(panzerPowerShotBitmap);
+        releaseBitmap(frigateBarrageShotBitmap);
+        releaseBitmap(landerEnergyShieldBitmap);
+        crewzerAuraBitmap = null;
+        bombardmentBombBitmap = null;
+        bombardmentExplosionBitmap = null;
+        panzerPowerShotBitmap = null;
+        frigateBarrageShotBitmap = null;
+        landerEnergyShieldBitmap = null;
+        preparedSkillEffectWidth = 0;
+        preparedSkillEffectHeight = 0;
+    }
+
     private void prepareHeartLiveBitmapIfReady() {
         if (screenWidth <= 0 || screenHeight <= 0) {
             return;
@@ -3274,7 +3424,15 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
 
         boolean twinShotActive = !isFrigateSkillActive()
                 && (isCrewzerSkillActive() || twinShotTimerSeconds > 0f);
-        Bitmap shotBitmap = isFrigateSkillActive() ? null : projectileBitmap;
+        Bitmap shotBitmap = isFrigateSkillActive()
+                ? frigateBarrageShotBitmap
+                : projectileBitmap;
+        float shotWidth = shotBitmap != null
+                ? shotBitmap.getWidth()
+                : projectileBitmap.getWidth();
+        float shotHeight = shotBitmap != null
+                ? shotBitmap.getHeight()
+                : projectileBitmap.getHeight();
         float projectileSpeed = getCurrentPlayerProjectileSpeed();
         if (twinShotActive) {
             float shotSpacing = currentPlayer.getWidth() * TWIN_SHOT_SPACING_RATIO;
@@ -3282,8 +3440,8 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
                     playerCenterX - shotSpacing,
                     playerTop,
                     shotBitmap,
-                    projectileBitmap.getWidth(),
-                    projectileBitmap.getHeight(),
+                    shotWidth,
+                    shotHeight,
                     projectileSpeed,
                     1
             );
@@ -3291,8 +3449,8 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
                     playerCenterX + shotSpacing,
                     playerTop,
                     shotBitmap,
-                    projectileBitmap.getWidth(),
-                    projectileBitmap.getHeight(),
+                    shotWidth,
+                    shotHeight,
                     projectileSpeed,
                     1
             );
@@ -3319,12 +3477,17 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
     }
 
     private void spawnPanzerPowerShot(float centerX, float playerTop) {
-        float width = projectileBitmap.getWidth() * PANZER_PROJECTILE_SCALE;
-        float height = projectileBitmap.getHeight() * PANZER_PROJECTILE_SCALE;
+        Bitmap shotBitmap = panzerPowerShotBitmap;
+        float width = shotBitmap != null
+                ? shotBitmap.getWidth()
+                : projectileBitmap.getWidth() * PANZER_PROJECTILE_SCALE;
+        float height = shotBitmap != null
+                ? shotBitmap.getHeight()
+                : projectileBitmap.getHeight() * PANZER_PROJECTILE_SCALE;
         spawnBullet(
                 centerX,
                 playerTop,
-                null,
+                shotBitmap,
                 width,
                 height,
                 playerBulletSpeedPixelsPerSecond * PANZER_PROJECTILE_SPEED_MULTIPLIER,
