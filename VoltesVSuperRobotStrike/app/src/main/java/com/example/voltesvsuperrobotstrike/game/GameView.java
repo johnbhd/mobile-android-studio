@@ -50,6 +50,9 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
     private static final float HUD_PANEL_PADDING_DP = 8f;
     private static final float HUD_ROW_SPACING_DP = 4f;
     private static final float HUD_HEART_SPACING_DP = 3f;
+    private static final float HUD_HEIGHT_DP = 68f;
+    private static final float PAUSE_BUTTON_SIZE_DP = 52f;
+    private static final float HUD_PAUSE_GAP_DP = 6f;
     private static final int MAX_PLAYER_LIVES = 5;
     private static final float PLAYER_BULLET_SPEED_DP_PER_SECOND = 700f;
     private static final float BULLET_PLAYER_OVERLAP_DP = 2f;
@@ -209,7 +212,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
     private final SurfaceHolder surfaceHolder;
     private final Object gameThreadLock = new Object();
     private final Paint infoPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-    private final Paint diagnosticPanelPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Paint hudPanelPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint projectilePaint = new Paint(
             Paint.ANTI_ALIAS_FLAG | Paint.FILTER_BITMAP_FLAG
     );
@@ -230,6 +233,8 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
             Paint.ANTI_ALIAS_FLAG | Paint.FILTER_BITMAP_FLAG
     );
     private final Paint scorePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Paint difficultyPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Paint livesPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final float density;
     private final float playerBulletSpeedPixelsPerSecond;
     private final float bulletPlayerOverlapPixels;
@@ -243,10 +248,14 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
     private final ArrayList<PowerUpCollectEffect> powerUpCollectEffects = new ArrayList<>();
     private final Random enemyRandom = new Random();
     private volatile Player player;
+    private final String scoreLabel;
+    private final String livesLabel;
 
     private volatile boolean running;
     private volatile boolean surfaceReady;
     private volatile boolean activityResumed;
+    private volatile boolean menuPaused;
+    private volatile boolean resetFrameTimeBaselineRequested;
     private volatile int screenWidth;
     private volatile int screenHeight;
     private volatile int topSystemInsetPixels;
@@ -319,7 +328,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
     private int lastTwinShotStatusSeconds = -1;
     private int lastDoubleScoreStatusSeconds = -1;
     private boolean lastShieldStatus;
-    private String diagnosticLine;
+    private String difficultyLine;
     private volatile boolean gameOver;
     private boolean gameOverCallbackSent;
     private float gameOverTimerSeconds;
@@ -352,6 +361,8 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
         playerBulletSpeedPixelsPerSecond = PLAYER_BULLET_SPEED_DP_PER_SECOND * density;
         bulletPlayerOverlapPixels = BULLET_PLAYER_OVERLAP_DP * density;
         enemySideMarginPixels = ENEMY_SIDE_MARGIN_DP * density;
+        scoreLabel = getResources().getString(R.string.game_hud_score_label);
+        livesLabel = getResources().getString(R.string.game_hud_lives_label);
         backgroundColor = ContextCompat.getColor(context, R.color.game_background);
         scrollingBackground = new ScrollingBackground(context);
         player = new Player(getResources(), R.drawable.volt_crewzer, density);
@@ -360,7 +371,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
         updateScoreLine();
         updateLivesLine();
         updatePowerUpStatusLine();
-        updateDiagnosticLines();
+        updateDifficultyLine();
         setFocusable(true);
         setClickable(true);
         initializeSystemBarInsets();
@@ -370,22 +381,40 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
         gameOverListener = listener;
     }
 
+    public void setMenuPaused(boolean paused) {
+        if (paused && gameOver) {
+            return;
+        }
+
+        menuPaused = paused;
+        resetTouchState();
+        resetFrameTimeBaselineRequested = true;
+    }
+
+    public boolean isMenuPaused() {
+        return menuPaused;
+    }
+
+    public boolean isGameOver() {
+        return gameOver;
+    }
+
     private void initializePaints() {
         int mutedTextColor = ContextCompat.getColor(
                 getContext(),
-                R.color.game_debug_muted
+                R.color.game_hud_muted
         );
-        int diagnosticPanelColor = ContextCompat.getColor(
+        int hudPanelColor = ContextCompat.getColor(
                 getContext(),
-                R.color.game_debug_panel
+                R.color.game_hud_panel
         );
 
         infoPaint.setColor(mutedTextColor);
-        infoPaint.setTextSize(13f * getResources().getDisplayMetrics().scaledDensity);
+        infoPaint.setTextSize(12f * getResources().getDisplayMetrics().scaledDensity);
         infoPaint.setTextAlign(Paint.Align.LEFT);
-        infoPaint.setTypeface(Typeface.create("sans-serif-condensed", Typeface.NORMAL));
+        infoPaint.setTypeface(Typeface.create("sans-serif-condensed", Typeface.BOLD));
 
-        diagnosticPanelPaint.setColor(diagnosticPanelColor);
+        hudPanelPaint.setColor(hudPanelColor);
 
         hudBorderPaint.setColor(ContextCompat.getColor(
                 getContext(),
@@ -401,6 +430,15 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
         scorePaint.setTextSize(20f * getResources().getDisplayMetrics().scaledDensity);
         scorePaint.setTextAlign(Paint.Align.LEFT);
         scorePaint.setTypeface(Typeface.create("sans-serif-condensed", Typeface.BOLD));
+
+        difficultyPaint.setTextSize(16f * getResources().getDisplayMetrics().scaledDensity);
+        difficultyPaint.setTextAlign(Paint.Align.CENTER);
+        difficultyPaint.setTypeface(Typeface.create("sans-serif-condensed", Typeface.BOLD));
+
+        livesPaint.setColor(ContextCompat.getColor(getContext(), R.color.white));
+        livesPaint.setTextSize(12f * getResources().getDisplayMetrics().scaledDensity);
+        livesPaint.setTextAlign(Paint.Align.LEFT);
+        livesPaint.setTypeface(Typeface.create("sans-serif-condensed", Typeface.BOLD));
     }
 
     public void configureGame(String selectedMachine, String selectedDifficulty) {
@@ -437,6 +475,8 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
         gameOverCallbackSent = false;
         gameOverTimerSeconds = 0f;
         finalScore = 0;
+        menuPaused = false;
+        resetFrameTimeBaselineRequested = true;
         updateLivesLine();
         updatePowerUpStatusLine();
 
@@ -469,7 +509,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
         preparePowerUpBitmapsIfReady();
         prepareHeartLiveBitmapIfReady();
 
-        updateDiagnosticLines();
+        updateDifficultyLine();
     }
 
     public void resumeGame() {
@@ -484,6 +524,8 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
 
     public void releaseGame() {
         pauseGame();
+        menuPaused = false;
+        resetTouchState();
         scrollingBackground.release();
         playerBullets.clear();
         enemyBullets.clear();
@@ -626,8 +668,16 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
         try {
             while (running) {
                 long frameStartTime = System.nanoTime();
-                float deltaSeconds = (frameStartTime - previousFrameTime) / 1_000_000_000f;
-                previousFrameTime = frameStartTime;
+                float deltaSeconds;
+                if (resetFrameTimeBaselineRequested) {
+                    resetFrameTimeBaselineRequested = false;
+                    previousFrameTime = frameStartTime;
+                    deltaSeconds = 0f;
+                } else {
+                    deltaSeconds = (frameStartTime - previousFrameTime)
+                            / 1_000_000_000f;
+                    previousFrameTime = frameStartTime;
+                }
 
                 if (deltaSeconds < 0f) {
                     deltaSeconds = 0f;
@@ -657,6 +707,10 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
         if (gameOver) {
             scrollingBackground.update(deltaSeconds);
             updateGameOver(deltaSeconds);
+            return;
+        }
+
+        if (menuPaused) {
             return;
         }
 
@@ -2102,7 +2156,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
             sourceBitmap.recycle();
         }
 
-        int targetSize = Math.max(1, Math.round(HEART_LIVE_SIZE_DP * density));
+        int targetSize = getHeartTargetSizePixels();
         heartLiveBitmap = Bitmap.createScaledBitmap(
                 croppedBitmap,
                 targetSize,
@@ -2115,6 +2169,21 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
 
         preparedHeartLiveWidth = screenWidth;
         preparedHeartLiveHeight = screenHeight;
+    }
+
+    private int getHeartTargetSizePixels() {
+        float screenWidthDp = screenWidth / density;
+        float hudWidthDp = screenWidthDp
+                - (HUD_MARGIN_DP * 2f)
+                - PAUSE_BUTTON_SIZE_DP
+                - HUD_PAUSE_GAP_DP;
+        float livesSectionWidthDp = Math.max(0f, hudWidthDp * 0.50f);
+        float availableWidthForHeartsDp = livesSectionWidthDp
+                - HUD_PANEL_PADDING_DP * 2f
+                - HUD_HEART_SPACING_DP * (MAX_PLAYER_LIVES - 1);
+        float heartSizeDp = availableWidthForHeartsDp / MAX_PLAYER_LIVES;
+        heartSizeDp = Math.max(14f, Math.min(HEART_LIVE_SIZE_DP, heartSizeDp));
+        return Math.max(1, Math.round(heartSizeDp * density));
     }
 
     private void releaseHeartLiveBitmap() {
@@ -2639,11 +2708,11 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
     }
 
     private void updateScoreLine() {
-        scoreLine = String.format(Locale.US, "SCORE %06d", score);
+        scoreLine = String.format(Locale.US, "%06d", score);
     }
 
     private void updateLivesLine() {
-        livesLine = String.format(Locale.US, "LIVES %d", playerLives);
+        livesLine = String.format(Locale.US, "%s %d", livesLabel, playerLives);
     }
 
     private void updatePowerUpStatusLine() {
@@ -2696,12 +2765,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
     }
 
     private void drawHud(Canvas canvas) {
-        boolean hasScore = scoreLine != null && !scoreLine.isEmpty();
-        boolean hasLives = livesLine != null && !livesLine.isEmpty();
-        boolean hasPowerUpStatus = powerUpStatusLine != null
-                && !powerUpStatusLine.isEmpty();
-        boolean hasDiagnostic = diagnosticLine != null && !diagnosticLine.isEmpty();
-        if (!hasScore && !hasLives && !hasPowerUpStatus && !hasDiagnostic) {
+        if (canvas.getWidth() <= 0 || canvas.getHeight() <= 0) {
             return;
         }
 
@@ -2710,91 +2774,76 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
         float rowSpacing = HUD_ROW_SPACING_DP * density;
         float panelTop = topSystemInsetPixels + margin;
 
-        if (hasScore) {
-            float scoreWidth = scorePaint.measureText(scoreLine) + panelPadding * 2f;
-            float scoreHeight = scorePaint.getTextSize() + panelPadding * 2f;
-            drawHudPanel(canvas, margin, panelTop, scoreWidth, scoreHeight);
-            canvas.drawText(
-                    scoreLine,
-                    margin + panelPadding,
-                    panelTop + panelPadding + scorePaint.getTextSize(),
-                    scorePaint
-            );
-
-            drawHudSecondaryInfo(
-                    canvas,
-                    margin,
-                    panelTop + scoreHeight + rowSpacing,
-                    panelPadding,
-                    rowSpacing,
-                    hasDiagnostic,
-                    hasPowerUpStatus
-            );
+        float pauseReservedWidth = (PAUSE_BUTTON_SIZE_DP + HUD_PAUSE_GAP_DP) * density;
+        float hudLeft = margin;
+        float hudRight = canvas.getWidth() - margin - pauseReservedWidth;
+        if (hudRight <= hudLeft) {
+            return;
         }
 
-        if (hasLives) {
-            int activeLives = Math.max(0, Math.min(MAX_PLAYER_LIVES, playerLives));
-            float heartSpacing = HUD_HEART_SPACING_DP * density;
-            float heartRowWidth = heartLiveBitmap == null || activeLives == 0
-                    ? 0f
-                    : activeLives * heartLiveBitmap.getWidth()
+        float hudWidth = hudRight - hudLeft;
+        float scoreWidth = Math.max(76f * density, hudWidth * 0.31f);
+        float difficultyWidth = Math.max(48f * density, hudWidth * 0.19f);
+        float livesWidth = hudWidth - scoreWidth - difficultyWidth;
+        if (livesWidth < 0f) {
+            livesWidth = 0f;
+            difficultyWidth = Math.max(0f, hudWidth - scoreWidth);
+        }
+
+        float hudHeight = HUD_HEIGHT_DP * density;
+        drawHudPanel(canvas, hudLeft, panelTop, hudWidth, hudHeight);
+
+        float contentTop = panelTop + panelPadding;
+        float labelBaseline = contentTop + infoPaint.getTextSize();
+        canvas.drawText(scoreLabel, hudLeft + panelPadding, labelBaseline, infoPaint);
+
+        float scoreBaseline = labelBaseline
+                + rowSpacing
+                + scorePaint.getTextSize();
+        canvas.drawText(
+                scoreLine,
+                hudLeft + panelPadding,
+                scoreBaseline,
+                scorePaint
+        );
+
+        float difficultyCenterX = hudLeft + scoreWidth + difficultyWidth / 2f;
+        float difficultyCenterY = panelTop + hudHeight / 2f;
+        float difficultyBaseline = difficultyCenterY
+                - (difficultyPaint.ascent() + difficultyPaint.descent()) / 2f;
+        canvas.drawText(
+                difficultyLine,
+                difficultyCenterX,
+                difficultyBaseline,
+                difficultyPaint
+        );
+
+        float livesLeft = hudLeft + scoreWidth + difficultyWidth;
+        canvas.drawText(livesLine, livesLeft + panelPadding, labelBaseline, livesPaint);
+
+        int activeLives = Math.max(0, Math.min(MAX_PLAYER_LIVES, playerLives));
+        if (heartLiveBitmap != null && activeLives > 0 && livesWidth > 0f) {
+            float heartSpacing = getHeartSpacing(livesWidth, activeLives);
+            float heartRowWidth = activeLives * heartLiveBitmap.getWidth()
                     + Math.max(0, activeLives - 1) * heartSpacing;
-            float livesContentWidth = Math.max(
-                    scorePaint.measureText(livesLine),
-                    heartRowWidth
-            );
-            float livesWidth = livesContentWidth + panelPadding * 2f;
-            float livesHeight = scorePaint.getTextSize() + panelPadding * 2f;
-            if (heartLiveBitmap != null && activeLives > 0) {
-                livesHeight += heartLiveBitmap.getHeight() + rowSpacing;
-            }
-
-            float livesLeft = canvas.getWidth() - margin - livesWidth;
-            if (hasScore) {
-                float scoreWidth = scorePaint.measureText(scoreLine)
-                        + panelPadding * 2f;
-                if (livesLeft < margin + scoreWidth + rowSpacing) {
-                    livesLeft = margin;
-                }
-            }
-            float livesTop = panelTop;
-            if (hasScore && livesLeft == margin) {
-                float scoreHeight = scorePaint.getTextSize() + panelPadding * 2f;
-                livesTop = panelTop + scoreHeight + rowSpacing;
-            }
-
-            drawHudPanel(canvas, livesLeft, livesTop, livesWidth, livesHeight);
-            canvas.drawText(
-                    livesLine,
-                    livesLeft + panelPadding,
-                    livesTop + panelPadding + scorePaint.getTextSize(),
-                    scorePaint
-            );
-
-            if (heartLiveBitmap != null && activeLives > 0) {
-                float heartLeft = livesLeft + panelPadding;
-                float heartTop = livesTop + panelPadding
-                        + scorePaint.getTextSize() + rowSpacing;
-                for (int index = 0; index < activeLives; index++) {
-                    canvas.drawBitmap(
-                            heartLiveBitmap,
-                            heartLeft + index * (heartLiveBitmap.getWidth() + heartSpacing),
-                            heartTop,
-                            heartPaint
-                    );
-                }
+            float heartLeft = livesLeft + (livesWidth - heartRowWidth) / 2f;
+            float heartTop = contentTop + livesPaint.getTextSize() + rowSpacing;
+            for (int index = 0; index < activeLives; index++) {
+                canvas.drawBitmap(
+                        heartLiveBitmap,
+                        heartLeft + index * (heartLiveBitmap.getWidth() + heartSpacing),
+                        heartTop,
+                        heartPaint
+                );
             }
         }
 
-        if (!hasScore) {
-            drawHudSecondaryInfo(
-                    canvas,
-                    margin,
-                    panelTop,
-                    panelPadding,
-                    rowSpacing,
-                    hasDiagnostic,
-                    hasPowerUpStatus
+        if (powerUpStatusLine != null && !powerUpStatusLine.isEmpty()) {
+            canvas.drawText(
+                    powerUpStatusLine,
+                    hudLeft + panelPadding,
+                    panelTop + hudHeight - panelPadding,
+                    infoPaint
             );
         }
     }
@@ -2811,7 +2860,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
                 top,
                 left + width,
                 top + height,
-                diagnosticPanelPaint
+                hudPanelPaint
         );
         canvas.drawRect(
                 left,
@@ -2822,57 +2871,20 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
         );
     }
 
-    private void drawHudSecondaryInfo(
-            Canvas canvas,
-            float left,
-            float top,
-            float panelPadding,
-            float rowSpacing,
-            boolean hasDiagnostic,
-            boolean hasPowerUpStatus
-    ) {
-        if (!hasDiagnostic && !hasPowerUpStatus) {
-            return;
+    private float getHeartSpacing(float livesWidth, int activeLives) {
+        if (activeLives <= 1 || heartLiveBitmap == null) {
+            return 0f;
         }
 
-        float contentWidth = 0f;
-        float contentHeight = 0f;
-        if (hasDiagnostic) {
-            contentWidth = Math.max(contentWidth, infoPaint.measureText(diagnosticLine));
-            contentHeight += infoPaint.getTextSize();
-        }
-        if (hasPowerUpStatus) {
-            contentWidth = Math.max(contentWidth, infoPaint.measureText(powerUpStatusLine));
-            if (contentHeight > 0f) {
-                contentHeight += rowSpacing;
-            }
-            contentHeight += infoPaint.getTextSize();
-        }
-
-        float panelWidth = contentWidth + panelPadding * 2f;
-        float panelHeight = contentHeight + panelPadding * 2f;
-        drawHudPanel(canvas, left, top, panelWidth, panelHeight);
-
-        float textBaseline = top + panelPadding + infoPaint.getTextSize();
-        if (hasDiagnostic) {
-            canvas.drawText(
-                    diagnosticLine,
-                    left + panelPadding,
-                    textBaseline,
-                    infoPaint
-            );
-        }
-        if (hasPowerUpStatus) {
-            if (hasDiagnostic) {
-                textBaseline += rowSpacing + infoPaint.getTextSize();
-            }
-            canvas.drawText(
-                    powerUpStatusLine,
-                    left + panelPadding,
-                    textBaseline,
-                    infoPaint
-            );
-        }
+        float availableSpacing = (
+                livesWidth
+                        - HUD_PANEL_PADDING_DP * density * 2f
+                        - activeLives * heartLiveBitmap.getWidth()
+        ) / (activeLives - 1);
+        return Math.max(
+                density,
+                Math.min(HUD_HEART_SPACING_DP * density, availableSpacing)
+        );
     }
 
     private void prepareProjectileBitmapIfReady() {
@@ -2955,7 +2967,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
 
     @Override
     public boolean onTouchEvent(MotionEvent event) {
-        if (gameOver || !running || !surfaceReady) {
+        if (gameOver || menuPaused || !running || !surfaceReady) {
             resetTouchState();
             return false;
         }
@@ -3072,26 +3084,20 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
         return true;
     }
 
-    private void updateDiagnosticLines() {
-        String machineDisplayName = getMachineDisplayName(selectedMachineId);
-        String difficultyDisplayName = getDifficultyDisplayName(selectedDifficultyId);
-
-        diagnosticLine = machineDisplayName + " - " + difficultyDisplayName;
+    private void updateDifficultyLine() {
+        difficultyLine = getDifficultyDisplayName(selectedDifficultyId);
+        difficultyPaint.setColor(getDifficultyColor(selectedDifficultyId));
     }
 
-    private String getMachineDisplayName(String machineId) {
-        switch (machineId) {
-            case "volt_bomber":
-                return "VOLT BOMBER";
-            case "volt_panzer":
-                return "VOLT PANZER";
-            case "volt_frigate":
-                return "VOLT FRIGATE";
-            case "volt_lander":
-                return "VOLT LANDER";
-            case "volt_crewzer":
+    private int getDifficultyColor(String difficultyId) {
+        switch (difficultyId) {
+            case "easy":
+                return ContextCompat.getColor(getContext(), R.color.difficulty_easy);
+            case "hard":
+                return ContextCompat.getColor(getContext(), R.color.difficulty_hard);
+            case "normal":
             default:
-                return "VOLT CREWZER";
+                return ContextCompat.getColor(getContext(), R.color.difficulty_normal);
         }
     }
 

@@ -31,4 +31,12 @@
     <dimen name="difficulty_card_spacing">8dp</dimen>
     <dimen name="difficulty_accent_width">6dp</dimen>
     <dimen name="difficulty_text_spacing">4dp</dimen>
+    <dimen name="game_hud_margin">10dp</dimen>
+    <dimen name="game_pause_button_size">52dp</dimen>
+    <dimen name="game_pause_button_gap">6dp</dimen>
+    <dimen name="game_pause_panel_margin">24dp</dimen>
+    <dimen name="game_pause_panel_padding">20dp</dimen>
+    <dimen name="game_pause_title_spacing">4dp</dimen>
+    <dimen name="game_pause_button_height">56dp</dimen>
+    <dimen name="game_pause_button_spacing">8dp</dimen>
 </resources>

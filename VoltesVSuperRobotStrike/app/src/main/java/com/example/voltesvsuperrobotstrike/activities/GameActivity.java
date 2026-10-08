@@ -2,17 +2,33 @@ package com.example.voltesvsuperrobotstrike.activities;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.view.View;
+import android.widget.FrameLayout;
+import android.widget.TextView;
 
 import androidx.activity.EdgeToEdge;
+import androidx.activity.OnBackPressedCallback;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.graphics.Insets;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowInsetsCompat;
 
+import com.example.voltesvsuperrobotstrike.MainActivity;
 import com.example.voltesvsuperrobotstrike.R;
 import com.example.voltesvsuperrobotstrike.ScorePreferences;
 import com.example.voltesvsuperrobotstrike.game.GameView;
 
 public class GameActivity extends AppCompatActivity {
 
+    private static final String STATE_MENU_PAUSED = "menu_paused_state";
+
     private GameView gameView;
+    private View pauseButton;
+    private View pauseOverlay;
+    private TextView pauseMachineName;
+    private TextView pauseDifficultyName;
+    private String selectedMachineId;
+    private String selectedDifficultyId;
     private boolean gameOverScreenStarted;
 
     @Override
@@ -22,8 +38,20 @@ public class GameActivity extends AppCompatActivity {
         setContentView(R.layout.activity_game);
 
         gameView = findViewById(R.id.gameView);
+        pauseButton = findViewById(R.id.pause_button);
+        pauseOverlay = findViewById(R.id.pause_overlay);
+        pauseMachineName = findViewById(R.id.pause_machine_name);
+        pauseDifficultyName = findViewById(R.id.pause_difficulty_name);
+
+        applySystemBarInsets();
+        setupPauseNavigation();
         gameView.setGameOverListener(this::handleGameOver);
         configureGameFromIntent(getIntent());
+
+        if (savedInstanceState != null
+                && savedInstanceState.getBoolean(STATE_MENU_PAUSED, false)) {
+            showPauseMenu();
+        }
     }
 
     @Override
@@ -32,6 +60,7 @@ public class GameActivity extends AppCompatActivity {
         setIntent(intent);
         gameOverScreenStarted = false;
         configureGameFromIntent(intent);
+        hidePauseMenuAndResume();
     }
 
     private void configureGameFromIntent(Intent intent) {
@@ -50,7 +79,10 @@ public class GameActivity extends AppCompatActivity {
             selectedDifficultyId = DifficultyActivity.DIFFICULTY_NORMAL;
         }
 
+        this.selectedMachineId = selectedMachineId;
+        this.selectedDifficultyId = selectedDifficultyId;
         gameView.configureGame(selectedMachineId, selectedDifficultyId);
+        updatePauseMenuSessionInfo();
     }
 
     private void handleGameOver(
@@ -64,6 +96,7 @@ public class GameActivity extends AppCompatActivity {
             }
 
             gameOverScreenStarted = true;
+            hidePauseUi();
             gameView.pauseGame();
 
             int previousHighScore = ScorePreferences.getHighScore(this);
@@ -92,6 +125,141 @@ public class GameActivity extends AppCompatActivity {
         }
     }
 
+    private void setupPauseNavigation() {
+        pauseButton.setOnClickListener(view -> {
+            showPauseMenu();
+        });
+
+        findViewById(R.id.resume_button).setOnClickListener(view -> {
+            hidePauseMenuAndResume();
+        });
+
+        findViewById(R.id.restart_mission_button).setOnClickListener(view -> {
+            restartMission();
+        });
+
+        findViewById(R.id.change_machine_button).setOnClickListener(view -> {
+            changeMachine();
+        });
+
+        findViewById(R.id.pause_main_menu_button).setOnClickListener(view -> {
+            returnToMainMenu();
+        });
+
+        getOnBackPressedDispatcher().addCallback(
+                this,
+                new OnBackPressedCallback(true) {
+                    @Override
+                    public void handleOnBackPressed() {
+                        if (gameView == null || gameView.isGameOver()) {
+                            return;
+                        }
+
+                        if (gameView.isMenuPaused()) {
+                            hidePauseMenuAndResume();
+                        } else {
+                            showPauseMenu();
+                        }
+                    }
+                }
+        );
+    }
+
+    private void showPauseMenu() {
+        if (gameView == null
+                || gameView.isGameOver()
+                || gameView.isMenuPaused()) {
+            return;
+        }
+
+        updatePauseMenuSessionInfo();
+        gameView.setMenuPaused(true);
+        pauseButton.setVisibility(View.GONE);
+        pauseOverlay.setVisibility(View.VISIBLE);
+        pauseOverlay.requestFocus();
+    }
+
+    private void hidePauseMenuAndResume() {
+        pauseOverlay.setVisibility(View.GONE);
+        pauseButton.setVisibility(View.VISIBLE);
+
+        if (gameView != null) {
+            gameView.setMenuPaused(false);
+        }
+    }
+
+    private void hidePauseUi() {
+        pauseOverlay.setVisibility(View.GONE);
+        pauseButton.setVisibility(View.GONE);
+    }
+
+    private void restartMission() {
+        Intent intent = new Intent(this, GameActivity.class);
+        intent.putExtra(
+                DifficultyActivity.EXTRA_SELECTED_MACHINE,
+                selectedMachineId
+        );
+        intent.putExtra(
+                DifficultyActivity.EXTRA_SELECTED_DIFFICULTY,
+                selectedDifficultyId
+        );
+        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP
+                | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+
+        gameView.pauseGame();
+        startActivity(intent);
+    }
+
+    private void changeMachine() {
+        Intent intent = new Intent(this, MachineSelectionActivity.class);
+        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP
+                | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+
+        gameView.pauseGame();
+        startActivity(intent);
+        finish();
+    }
+
+    private void returnToMainMenu() {
+        Intent intent = new Intent(this, MainActivity.class);
+        intent.putExtra(
+                MainActivity.EXTRA_SPLASH_COMPLETE,
+                true
+        );
+        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP
+                | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+
+        gameView.pauseGame();
+        startActivity(intent);
+        finish();
+    }
+
+    private void updatePauseMenuSessionInfo() {
+        if (pauseMachineName == null || pauseDifficultyName == null) {
+            return;
+        }
+
+        pauseMachineName.setText(getMachineDisplayName(selectedMachineId));
+        pauseDifficultyName.setText(getDifficultyDisplayName(selectedDifficultyId));
+    }
+
+    private void applySystemBarInsets() {
+        View rootView = findViewById(R.id.game_root);
+        ViewCompat.setOnApplyWindowInsetsListener(rootView, (view, insets) -> {
+            Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
+            FrameLayout.LayoutParams pauseButtonParams =
+                    (FrameLayout.LayoutParams) pauseButton.getLayoutParams();
+            int hudMargin = getResources().getDimensionPixelSize(
+                    R.dimen.game_hud_margin
+            );
+            pauseButtonParams.topMargin = systemBars.top + hudMargin;
+            pauseButtonParams.rightMargin = systemBars.right + hudMargin;
+            pauseButton.setLayoutParams(pauseButtonParams);
+            return insets;
+        });
+        ViewCompat.requestApplyInsets(rootView);
+    }
+
     @Override
     protected void onPause() {
         if (gameView != null) {
@@ -109,6 +277,43 @@ public class GameActivity extends AppCompatActivity {
         }
 
         super.onDestroy();
+    }
+
+    @Override
+    protected void onSaveInstanceState(Bundle outState) {
+        outState.putBoolean(
+                STATE_MENU_PAUSED,
+                gameView != null && gameView.isMenuPaused()
+        );
+        super.onSaveInstanceState(outState);
+    }
+
+    private String getMachineDisplayName(String machineId) {
+        switch (machineId) {
+            case MachineSelectionActivity.MACHINE_BOMBER:
+                return getString(R.string.machine_volt_bomber);
+            case MachineSelectionActivity.MACHINE_PANZER:
+                return getString(R.string.machine_volt_panzer);
+            case MachineSelectionActivity.MACHINE_FRIGATE:
+                return getString(R.string.machine_volt_frigate);
+            case MachineSelectionActivity.MACHINE_LANDER:
+                return getString(R.string.machine_volt_lander);
+            case MachineSelectionActivity.MACHINE_CREWZER:
+            default:
+                return getString(R.string.machine_volt_crewzer);
+        }
+    }
+
+    private String getDifficultyDisplayName(String difficultyId) {
+        switch (difficultyId) {
+            case DifficultyActivity.DIFFICULTY_EASY:
+                return getString(R.string.difficulty_easy);
+            case DifficultyActivity.DIFFICULTY_HARD:
+                return getString(R.string.difficulty_hard);
+            case DifficultyActivity.DIFFICULTY_NORMAL:
+            default:
+                return getString(R.string.difficulty_normal);
+        }
     }
 
     private boolean isValidMachineId(String machineId) {

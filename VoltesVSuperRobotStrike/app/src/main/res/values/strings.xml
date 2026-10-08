@@ -64,6 +64,19 @@ GameView and gameplay systems will be implemented in a later task.</string>
     <string name="game_foundation_difficulty">Difficulty: %1$s</string>
     <string name="game_foundation_running">GameView Running</string>
 
+    <string name="game_hud_score_label">SCORE</string>
+    <string name="game_hud_lives_label">LIVES</string>
+    <string name="game_pause_title">PAUSED</string>
+    <string name="game_pause_resume">RESUME</string>
+    <string name="game_pause_restart">RESTART MISSION</string>
+    <string name="game_pause_change_machine">CHANGE MACHINE</string>
+    <string name="game_pause_main_menu">MAIN MENU</string>
+    <string name="game_pause_button_description">Pause game</string>
+    <string name="game_resume_button_description">Resume game</string>
+    <string name="game_restart_button_description">Restart mission</string>
+    <string name="game_change_machine_button_description">Change Volt Machine</string>
+    <string name="game_main_menu_button_description">Return to main menu</string>
+
     <string name="game_over_title">GAME OVER</string>
     <string name="game_over_final_score">FINAL SCORE</string>
     <string name="game_over_high_score">HIGH SCORE</string>
