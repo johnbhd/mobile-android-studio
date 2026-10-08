@@ -53,7 +53,8 @@
     <string name="how_to_play_placeholder">Instructions will be implemented in a later task.</string>
 
     <string name="high_score_title">HIGH SCORE</string>
-    <string name="high_score_placeholder">High-score persistence will be implemented in a later task.</string>
+    <string name="high_score_personal_best">PERSONAL BEST</string>
+    <string name="high_score_back">BACK</string>
 
     <string name="gameplay_title">GAMEPLAY</string>
     <string name="gameplay_placeholder">Gameplay foundation ready.
@@ -64,5 +65,10 @@ GameView and gameplay systems will be implemented in a later task.</string>
     <string name="game_foundation_running">GameView Running</string>
 
     <string name="game_over_title">GAME OVER</string>
-    <string name="game_over_placeholder">Game-over behavior will be implemented in a later task.</string>
+    <string name="game_over_final_score">FINAL SCORE</string>
+    <string name="game_over_high_score">HIGH SCORE</string>
+    <string name="game_over_new_high_score">NEW HIGH SCORE!</string>
+    <string name="game_over_play_again">PLAY AGAIN</string>
+    <string name="game_over_main_menu">MAIN MENU</string>
+    <string name="game_over_run_summary">%1$s &#8226; %2$s</string>
 </resources>

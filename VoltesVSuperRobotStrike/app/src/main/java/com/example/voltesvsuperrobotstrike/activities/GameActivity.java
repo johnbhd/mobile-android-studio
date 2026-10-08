@@ -1,16 +1,19 @@
 package com.example.voltesvsuperrobotstrike.activities;
 
+import android.content.Intent;
 import android.os.Bundle;
 
 import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.example.voltesvsuperrobotstrike.R;
+import com.example.voltesvsuperrobotstrike.ScorePreferences;
 import com.example.voltesvsuperrobotstrike.game.GameView;
 
 public class GameActivity extends AppCompatActivity {
 
     private GameView gameView;
+    private boolean gameOverScreenStarted;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -18,10 +21,24 @@ public class GameActivity extends AppCompatActivity {
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_game);
 
-        String selectedMachineId = getIntent().getStringExtra(
+        gameView = findViewById(R.id.gameView);
+        gameView.setGameOverListener(this::handleGameOver);
+        configureGameFromIntent(getIntent());
+    }
+
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        setIntent(intent);
+        gameOverScreenStarted = false;
+        configureGameFromIntent(intent);
+    }
+
+    private void configureGameFromIntent(Intent intent) {
+        String selectedMachineId = intent.getStringExtra(
                 DifficultyActivity.EXTRA_SELECTED_MACHINE
         );
-        String selectedDifficultyId = getIntent().getStringExtra(
+        String selectedDifficultyId = intent.getStringExtra(
                 DifficultyActivity.EXTRA_SELECTED_DIFFICULTY
         );
 
@@ -33,8 +50,37 @@ public class GameActivity extends AppCompatActivity {
             selectedDifficultyId = DifficultyActivity.DIFFICULTY_NORMAL;
         }
 
-        gameView = findViewById(R.id.gameView);
         gameView.configureGame(selectedMachineId, selectedDifficultyId);
+    }
+
+    private void handleGameOver(
+            int finalScore,
+            String selectedMachineId,
+            String selectedDifficultyId
+    ) {
+        runOnUiThread(() -> {
+            if (gameOverScreenStarted || isFinishing() || isDestroyed()) {
+                return;
+            }
+
+            gameOverScreenStarted = true;
+            gameView.pauseGame();
+
+            int previousHighScore = ScorePreferences.getHighScore(this);
+            boolean isNewHighScore = finalScore > previousHighScore;
+            int highScore = Math.max(finalScore, previousHighScore);
+            if (isNewHighScore) {
+                ScorePreferences.saveHighScore(this, finalScore);
+            }
+
+            Intent intent = new Intent(this, GameOverActivity.class);
+            intent.putExtra(GameOverActivity.EXTRA_FINAL_SCORE, finalScore);
+            intent.putExtra(GameOverActivity.EXTRA_HIGH_SCORE, highScore);
+            intent.putExtra(GameOverActivity.EXTRA_NEW_HIGH_SCORE, isNewHighScore);
+            intent.putExtra(GameOverActivity.EXTRA_SELECTED_MACHINE, selectedMachineId);
+            intent.putExtra(GameOverActivity.EXTRA_DIFFICULTY, selectedDifficultyId);
+            startActivity(intent);
+        });
     }
 
     @Override
@@ -58,6 +104,7 @@ public class GameActivity extends AppCompatActivity {
     @Override
     protected void onDestroy() {
         if (gameView != null) {
+            gameView.setGameOverListener(null);
             gameView.releaseGame();
         }
 

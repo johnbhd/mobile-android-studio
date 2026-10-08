@@ -1,27 +1,104 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
-    android:id="@+id/main"
+    android:id="@+id/high_score_root"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:gravity="center_horizontal"
-    android:orientation="vertical"
-    android:padding="@dimen/screen_padding"
+    android:background="@color/menu_navy"
     tools:context=".activities.HighScoreActivity">
 
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:gravity="center"
-        android:text="@string/high_score_title"
-        android:textSize="24sp"
-        android:textStyle="bold" />
-
-    <TextView
+    <ImageView
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="@dimen/content_spacing"
-        android:gravity="center"
-        android:text="@string/high_score_placeholder" />
+        android:layout_height="match_parent"
+        android:contentDescription="@null"
+        android:importantForAccessibility="no"
+        android:scaleType="centerCrop"
+        android:src="@drawable/starting_screen" />
 
-</LinearLayout>
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@drawable/menu_overlay_gradient"
+        android:importantForAccessibility="no" />
+
+    <FrameLayout
+        android:id="@+id/main"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:clipToPadding="false">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:gravity="center"
+            android:orientation="vertical"
+            android:padding="@dimen/content_spacing">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@drawable/menu_panel_background"
+                android:gravity="center_horizontal"
+                android:orientation="vertical"
+                android:padding="@dimen/screen_padding">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="sans-serif-condensed"
+                    android:text="@string/high_score_title"
+                    android:textColor="@color/menu_text_secondary"
+                    android:textSize="30sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/high_score_value"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/content_spacing"
+                    android:fontFamily="sans-serif-monospace"
+                    android:text="000000"
+                    android:textColor="@color/menu_gold"
+                    android:textSize="46sp"
+                    android:textStyle="bold"
+                    tools:text="008900" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/content_spacing"
+                    android:fontFamily="sans-serif-condensed"
+                    android:text="@string/high_score_personal_best"
+                    android:textColor="@color/machine_text_muted"
+                    android:textSize="13sp"
+                    android:textStyle="bold" />
+
+                <androidx.appcompat.widget.AppCompatButton
+                    android:id="@+id/back_button"
+                    android:layout_width="match_parent"
+                    android:layout_height="@dimen/main_menu_secondary_button_height"
+                    android:layout_marginTop="@dimen/content_spacing"
+                    android:background="@drawable/menu_button_secondary"
+                    android:backgroundTint="@null"
+                    android:fontFamily="sans-serif-condensed"
+                    android:gravity="center"
+                    android:letterSpacing="0.08"
+                    android:minHeight="@dimen/main_menu_secondary_button_height"
+                    android:minWidth="0dp"
+                    android:paddingStart="20dp"
+                    android:paddingEnd="20dp"
+                    android:drawableStart="@drawable/ic_arrow_back"
+                    android:drawablePadding="10dp"
+                    android:drawableTint="@color/menu_text_secondary"
+                    android:stateListAnimator="@null"
+                    android:text="@string/high_score_back"
+                    android:textColor="@color/menu_text_secondary"
+                    android:textSize="16sp"
+                    android:textStyle="bold"
+                    app:backgroundTint="@null" />
+
+            </LinearLayout>
+        </LinearLayout>
+    </FrameLayout>
+</FrameLayout>
