@@ -37,6 +37,8 @@
     <dimen name="game_pause_panel_margin">24dp</dimen>
     <dimen name="game_pause_panel_padding">20dp</dimen>
     <dimen name="game_pause_title_spacing">4dp</dimen>
+    <dimen name="game_pause_pilot_image_size">72dp</dimen>
+    <dimen name="game_pause_pilot_image_spacing">8dp</dimen>
     <dimen name="game_pause_button_height">56dp</dimen>
     <dimen name="game_pause_button_spacing">8dp</dimen>
 </resources>

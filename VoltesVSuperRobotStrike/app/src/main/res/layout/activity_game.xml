@@ -82,6 +82,16 @@
                 android:textSize="15sp"
                 android:textStyle="bold" />
 
+            <ImageView
+                android:id="@+id/pause_pilot_image"
+                android:layout_width="@dimen/game_pause_pilot_image_size"
+                android:layout_height="@dimen/game_pause_pilot_image_size"
+                android:layout_gravity="center"
+                android:layout_marginTop="@dimen/game_pause_pilot_image_spacing"
+                android:contentDescription="@string/pilot_steve_armstrong"
+                android:importantForAccessibility="yes"
+                android:scaleType="fitCenter" />
+
             <androidx.appcompat.widget.AppCompatButton
                 android:id="@+id/resume_button"
                 android:layout_width="match_parent"

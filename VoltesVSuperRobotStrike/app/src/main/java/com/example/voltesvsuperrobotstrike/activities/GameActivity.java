@@ -4,6 +4,7 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.FrameLayout;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 import androidx.activity.EdgeToEdge;
@@ -27,6 +28,7 @@ public class GameActivity extends AppCompatActivity {
     private View pauseOverlay;
     private TextView pauseMachineName;
     private TextView pauseDifficultyName;
+    private ImageView pausePilotImage;
     private String selectedMachineId;
     private String selectedDifficultyId;
     private boolean gameOverScreenStarted;
@@ -42,6 +44,7 @@ public class GameActivity extends AppCompatActivity {
         pauseOverlay = findViewById(R.id.pause_overlay);
         pauseMachineName = findViewById(R.id.pause_machine_name);
         pauseDifficultyName = findViewById(R.id.pause_difficulty_name);
+        pausePilotImage = findViewById(R.id.pause_pilot_image);
 
         applySystemBarInsets();
         setupPauseNavigation();
@@ -241,6 +244,10 @@ public class GameActivity extends AppCompatActivity {
 
         pauseMachineName.setText(getMachineDisplayName(selectedMachineId));
         pauseDifficultyName.setText(getDifficultyDisplayName(selectedDifficultyId));
+        pausePilotImage.setImageResource(getPilotImageResource(selectedMachineId));
+        pausePilotImage.setContentDescription(
+                getString(getPilotNameResource(selectedMachineId))
+        );
     }
 
     private void applySystemBarInsets() {
@@ -313,6 +320,38 @@ public class GameActivity extends AppCompatActivity {
             case DifficultyActivity.DIFFICULTY_NORMAL:
             default:
                 return getString(R.string.difficulty_normal);
+        }
+    }
+
+    private int getPilotImageResource(String machineId) {
+        switch (machineId) {
+            case MachineSelectionActivity.MACHINE_BOMBER:
+                return R.drawable.pilot_mark_gordon;
+            case MachineSelectionActivity.MACHINE_PANZER:
+                return R.drawable.pilot_big_bert_armstrong;
+            case MachineSelectionActivity.MACHINE_FRIGATE:
+                return R.drawable.pilot_little_jon_armstrong;
+            case MachineSelectionActivity.MACHINE_LANDER:
+                return R.drawable.pilot_jamie_robinson;
+            case MachineSelectionActivity.MACHINE_CREWZER:
+            default:
+                return R.drawable.pilot_steve_armstrong;
+        }
+    }
+
+    private int getPilotNameResource(String machineId) {
+        switch (machineId) {
+            case MachineSelectionActivity.MACHINE_BOMBER:
+                return R.string.pilot_mark_gordon;
+            case MachineSelectionActivity.MACHINE_PANZER:
+                return R.string.pilot_big_bert_armstrong;
+            case MachineSelectionActivity.MACHINE_FRIGATE:
+                return R.string.pilot_little_jon_armstrong;
+            case MachineSelectionActivity.MACHINE_LANDER:
+                return R.string.pilot_jamie_robinson;
+            case MachineSelectionActivity.MACHINE_CREWZER:
+            default:
+                return R.string.pilot_steve_armstrong;
         }
     }
 
