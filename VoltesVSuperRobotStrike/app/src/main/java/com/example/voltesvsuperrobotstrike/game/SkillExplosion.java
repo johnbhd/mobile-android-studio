@@ -3,8 +3,9 @@ package com.example.voltesvsuperrobotstrike.game;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Paint;
+import android.graphics.RectF;
 
-/** Short-lived Canvas fallback for the Bomber skill explosion. */
+/** Short-lived bitmap or Canvas explosion effect. */
 public final class SkillExplosion {
 
     private final Bitmap bitmap;
@@ -12,6 +13,8 @@ public final class SkillExplosion {
     private final float centerY;
     private final float radius;
     private final float durationSeconds;
+    private final float bitmapScale;
+    private final RectF bitmapDestinationRect = new RectF();
     private float elapsedSeconds;
 
     public SkillExplosion(
@@ -21,11 +24,41 @@ public final class SkillExplosion {
             float radius,
             float durationSeconds
     ) {
+        this(
+                bitmap,
+                centerX,
+                centerY,
+                radius,
+                durationSeconds,
+                1f
+        );
+    }
+
+    public SkillExplosion(
+            Bitmap bitmap,
+            float centerX,
+            float centerY,
+            float radius,
+            float durationSeconds,
+            float bitmapScale
+    ) {
         this.bitmap = bitmap;
         this.centerX = centerX;
         this.centerY = centerY;
         this.radius = Math.max(1f, radius);
         this.durationSeconds = Math.max(0.01f, durationSeconds);
+        this.bitmapScale = Math.max(0.01f, bitmapScale);
+
+        if (bitmap != null) {
+            float bitmapWidth = bitmap.getWidth() * this.bitmapScale;
+            float bitmapHeight = bitmap.getHeight() * this.bitmapScale;
+            bitmapDestinationRect.set(
+                    centerX - bitmapWidth / 2f,
+                    centerY - bitmapHeight / 2f,
+                    centerX + bitmapWidth / 2f,
+                    centerY + bitmapHeight / 2f
+            );
+        }
     }
 
     public void update(float deltaSeconds) {
@@ -49,8 +82,8 @@ public final class SkillExplosion {
             paint.setAlpha(alpha);
             canvas.drawBitmap(
                     bitmap,
-                    centerX - bitmap.getWidth() / 2f,
-                    centerY - bitmap.getHeight() / 2f,
+                    null,
+                    bitmapDestinationRect,
                     paint
             );
             paint.setColor(previousColor);

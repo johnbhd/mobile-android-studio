@@ -40,7 +40,10 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
     private static final float BOMBER_BOMB_HEIGHT_RATIO = 0.09f;
     private static final float BOMBER_BOMB_DETONATION_THRESHOLD_RATIO = 0.25f;
     private static final float BOMBER_EXPLOSION_DURATION_SECONDS = 0.35f;
-    private static final float BOMBER_EXPLOSION_RADIUS_RATIO = 0.14f;
+    private static final float BOMBER_EXPLOSION_RADIUS_RATIO = 0.20f;
+    private static final float ENEMY_EXPLOSION_DURATION_SECONDS = 0.25f;
+    private static final float ENEMY_EXPLOSION_RADIUS_RATIO = 0.10f;
+    private static final float ENEMY_EXPLOSION_BITMAP_SCALE = 0.50f;
     private static final int BOMBER_BOMB_COUNT = 3;
     private static final float PANZER_SKILL_DURATION_SECONDS = 5f;
     private static final float PANZER_PROJECTILE_SCALE = 1.70f;
@@ -48,7 +51,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
     private static final float PANZER_FIRE_INTERVAL_MULTIPLIER = 1.20f;
     private static final float FRIGATE_SKILL_DURATION_SECONDS = 5f;
     private static final float FRIGATE_BARRAGE_INTERVAL_SECONDS = 0.12f;
-    private static final float LANDER_SKILL_DURATION_SECONDS = 7f;
+    private static final float LANDER_SKILL_DURATION_SECONDS = 15f;
     private static final float LANDER_SHIELD_RADIUS_MULTIPLIER = 0.72f;
     private static final float RAPID_FIRE_DURATION_SECONDS = 8f;
     private static final float RAPID_FIRE_INTERVAL_MULTIPLIER = 0.55f;
@@ -334,6 +337,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
     private Bitmap panzerPowerShotBitmap;
     private Bitmap frigateBarrageShotBitmap;
     private Bitmap landerEnergyShieldBitmap;
+    private Bitmap shieldEffectBitmap;
     private int preparedPowerUpWidth;
     private int preparedPowerUpHeight;
     private int preparedHeartLiveWidth;
@@ -923,6 +927,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
             }
 
             drawLanderEnergyShield(canvas);
+            drawUniversalShield(canvas);
             drawSkillActivationEffect(canvas);
 
             drawHud(canvas);
@@ -1061,6 +1066,49 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
                 radius,
                 skillEffectPaint
         );
+
+        skillEffectPaint.setColor(previousColor);
+        skillEffectPaint.setAlpha(previousAlpha);
+        skillEffectPaint.setStyle(previousStyle);
+    }
+
+    private void drawUniversalShield(Canvas canvas) {
+        if (!shieldActive) {
+            return;
+        }
+
+        Player currentPlayer = player;
+        if (currentPlayer == null || !currentPlayer.isPrepared()) {
+            return;
+        }
+
+        int previousColor = skillEffectPaint.getColor();
+        int previousAlpha = skillEffectPaint.getAlpha();
+        Paint.Style previousStyle = skillEffectPaint.getStyle();
+
+        if (shieldEffectBitmap != null && !shieldEffectBitmap.isRecycled()) {
+            skillEffectPaint.setAlpha(175);
+            canvas.drawBitmap(
+                    shieldEffectBitmap,
+                    currentPlayer.getCenterX() - shieldEffectBitmap.getWidth() / 2f,
+                    currentPlayer.getCenterY() - shieldEffectBitmap.getHeight() / 2f,
+                    skillEffectPaint
+            );
+        } else {
+            float radius = Math.max(
+                    currentPlayer.getWidth(),
+                    currentPlayer.getHeight()
+            ) * LANDER_SHIELD_RADIUS_MULTIPLIER;
+            skillEffectPaint.setColor(0xFF65D38A);
+            skillEffectPaint.setAlpha(145);
+            skillEffectPaint.setStyle(Paint.Style.STROKE);
+            canvas.drawCircle(
+                    currentPlayer.getCenterX(),
+                    currentPlayer.getCenterY(),
+                    radius,
+                    skillEffectPaint
+            );
+        }
 
         skillEffectPaint.setColor(previousColor);
         skillEffectPaint.setAlpha(previousAlpha);
@@ -2732,7 +2780,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
                 BOMBER_BOMB_WIDTH_RATIO
         );
         bombardmentExplosionBitmap = loadScaledSkillEffectBitmap(
-                R.drawable.skill_bombardment_explosion,
+                R.drawable.effect_bomb_explosion,
                 BOMBER_EXPLOSION_RADIUS_RATIO * 2f
         );
         panzerPowerShotBitmap = loadScaledSkillEffectBitmap(
@@ -2745,6 +2793,10 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
         );
         landerEnergyShieldBitmap = loadScaledSkillEffectBitmap(
                 R.drawable.skill_lander_energy_shield_effect,
+                0.30f
+        );
+        shieldEffectBitmap = loadScaledSkillEffectBitmap(
+                R.drawable.shield_effect,
                 0.30f
         );
         preparedSkillEffectWidth = screenWidth;
@@ -2797,7 +2849,8 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
                 && bombardmentExplosionBitmap != null
                 && panzerPowerShotBitmap != null
                 && frigateBarrageShotBitmap != null
-                && landerEnergyShieldBitmap != null;
+                && landerEnergyShieldBitmap != null
+                && shieldEffectBitmap != null;
     }
 
     private void releaseSkillEffectBitmaps() {
@@ -2807,12 +2860,14 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
         releaseBitmap(panzerPowerShotBitmap);
         releaseBitmap(frigateBarrageShotBitmap);
         releaseBitmap(landerEnergyShieldBitmap);
+        releaseBitmap(shieldEffectBitmap);
         crewzerAuraBitmap = null;
         bombardmentBombBitmap = null;
         bombardmentExplosionBitmap = null;
         panzerPowerShotBitmap = null;
         frigateBarrageShotBitmap = null;
         landerEnergyShieldBitmap = null;
+        shieldEffectBitmap = null;
         preparedSkillEffectWidth = 0;
         preparedSkillEffectHeight = 0;
     }
@@ -2913,6 +2968,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
     }
 
     private void awardEnemyDestruction(Enemy enemy) {
+        spawnEnemyExplosion(enemy);
         int enemyScore = getScoreForEnemy(enemy);
         score += doubleScoreTimerSeconds > 0f
                 ? enemyScore * 2
@@ -2922,6 +2978,18 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
                 enemy.getCenterX(),
                 enemy.getY() + enemy.getHeight() / 2f
         );
+    }
+
+    private void spawnEnemyExplosion(Enemy enemy) {
+        float radius = screenWidth * ENEMY_EXPLOSION_RADIUS_RATIO;
+        skillExplosions.add(new SkillExplosion(
+                bombardmentExplosionBitmap,
+                enemy.getCenterX(),
+                enemy.getY() + enemy.getHeight() / 2f,
+                radius,
+                ENEMY_EXPLOSION_DURATION_SECONDS,
+                ENEMY_EXPLOSION_BITMAP_SCALE
+        ));
     }
 
     private void spawnPowerUp(float centerX, float centerY) {
