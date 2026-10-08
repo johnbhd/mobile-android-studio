@@ -31,12 +31,12 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
     private static final float AUTO_FIRE_INTERVAL_SECONDS = 0.35f;
     private static final float SKILL_COOLDOWN_SECONDS = 25f;
     private static final float SKILL_ACTIVATION_EFFECT_SECONDS = 0.20f;
-    private static final float CREWZER_SKILL_DURATION_SECONDS = 6f;
+    private static final float CREWZER_SKILL_DURATION_SECONDS = 8f;
     private static final float CREWZER_MOVEMENT_MULTIPLIER = 1.40f;
     private static final float CREWZER_FIRE_INTERVAL_MULTIPLIER = 0.85f;
     private static final float CREWZER_PROJECTILE_SPEED_MULTIPLIER = 1.15f;
-    private static final float BOMBER_SKILL_DURATION_SECONDS = 4f;
-    private static final float BOMBER_BOMB_INTERVAL_SECONDS = 1.30f;
+    private static final int MAX_BOMBARDMENT_CHARGES = 5;
+    private static final float BOMBER_BOMB_LAUNCH_DELAY_SECONDS = 0.45f;
     private static final float BOMBER_BOMB_SPEED_MULTIPLIER = 0.70f;
     private static final float BOMBER_BOMB_WIDTH_RATIO = 0.09f;
     private static final float BOMBER_BOMB_HEIGHT_RATIO = 0.09f;
@@ -46,8 +46,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
     private static final float ENEMY_EXPLOSION_DURATION_SECONDS = 0.25f;
     private static final float ENEMY_EXPLOSION_RADIUS_RATIO = 0.10f;
     private static final float ENEMY_EXPLOSION_BITMAP_SCALE = 0.50f;
-    private static final int BOMBER_BOMB_COUNT = 3;
-    private static final float PANZER_SKILL_DURATION_SECONDS = 5f;
+    private static final float PANZER_SKILL_DURATION_SECONDS = 8f;
     private static final float PANZER_PROJECTILE_SCALE = 1.70f;
     private static final float PANZER_PROJECTILE_SPEED_MULTIPLIER = 0.88f;
     private static final float PANZER_FIRE_INTERVAL_MULTIPLIER = 1.20f;
@@ -377,8 +376,8 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
     private float skillActivationEffectRemainingSeconds;
     private float skillActivationCenterX;
     private float skillActivationCenterY;
-    private float bomberBombScheduleSeconds;
-    private int bomberBombsSpawned;
+    private volatile int bombardmentCharges = MAX_BOMBARDMENT_CHARGES;
+    private float bombardmentLaunchDelaySeconds;
     private String livesLine;
     private String powerUpStatusLine;
     private int lastRapidFireStatusSeconds = -1;
@@ -395,6 +394,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
     private SkillState lastNotifiedSkillState;
     private int lastNotifiedSkillSeconds = -1;
     private String lastNotifiedSkillLabel;
+    private int lastNotifiedBombardmentCharges = -1;
 
     public enum SkillState {
         READY,
@@ -462,6 +462,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
         lastNotifiedSkillState = null;
         lastNotifiedSkillSeconds = -1;
         lastNotifiedSkillLabel = null;
+        lastNotifiedBombardmentCharges = -1;
         notifySkillStateChangedIfNeeded();
     }
 
@@ -498,6 +499,10 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
 
     public boolean isSkillInputReady() {
         return activityResumed && surfaceReady && !menuPaused && !gameOver;
+    }
+
+    public int getBombardmentCharges() {
+        return bombardmentCharges;
     }
 
     private void initializePaints() {
@@ -586,8 +591,8 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
         skillActivationEffectRemainingSeconds = 0f;
         skillActivationCenterX = 0f;
         skillActivationCenterY = 0f;
-        bomberBombScheduleSeconds = 0f;
-        bomberBombsSpawned = 0;
+        bombardmentCharges = MAX_BOMBARDMENT_CHARGES;
+        bombardmentLaunchDelaySeconds = 0f;
         gameOver = false;
         gameOverCallbackSent = false;
         gameOverTimerSeconds = 0f;
@@ -1213,10 +1218,16 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
         }
 
         skillActivationRequested = false;
-        if (gameOver
-                || menuPaused
-                || skillActive
-                || skillCooldownRemainingSeconds > 0f) {
+        if (gameOver || menuPaused) {
+            return;
+        }
+
+        if (isBomberMachine()) {
+            tryFireBombardmentBomb();
+            return;
+        }
+
+        if (skillActive || skillCooldownRemainingSeconds > 0f) {
             return;
         }
 
@@ -1241,11 +1252,6 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
         skillActivationCenterY = currentPlayer.getCenterY();
         fireCooldownSeconds = 0f;
 
-        if (isBomberSkillActive()) {
-            bomberBombsSpawned = 0;
-            bomberBombScheduleSeconds = 0f;
-        }
-
         notifySkillStateChangedIfNeeded();
     }
 
@@ -1257,15 +1263,13 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
             );
         }
 
-        if (skillActive) {
+        if (isBomberMachine()) {
+            updateBombardmentState(deltaSeconds);
+        } else if (skillActive) {
             skillRemainingSeconds = Math.max(
                     0f,
                     skillRemainingSeconds - deltaSeconds
             );
-
-            if (isBomberSkillActive()) {
-                updateBombardmentSchedule(deltaSeconds);
-            }
 
             if (skillRemainingSeconds <= 0f) {
                 finishMachineSkill();
@@ -1290,25 +1294,53 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
         notifySkillStateChangedIfNeeded();
     }
 
-    private void updateBombardmentSchedule(float deltaSeconds) {
-        if (bomberBombsSpawned >= BOMBER_BOMB_COUNT) {
+    private void updateBombardmentState(float deltaSeconds) {
+        if (bombardmentLaunchDelaySeconds > 0f) {
+            bombardmentLaunchDelaySeconds = Math.max(
+                    0f,
+                    bombardmentLaunchDelaySeconds - deltaSeconds
+            );
+        }
+
+        if (skillCooldownRemainingSeconds <= 0f) {
             return;
         }
 
-        bomberBombScheduleSeconds -= deltaSeconds;
-        if (bomberBombScheduleSeconds > 0f) {
-            return;
-        }
+        skillCooldownRemainingSeconds = Math.max(
+                0f,
+                skillCooldownRemainingSeconds - deltaSeconds
+        );
 
-        spawnBombardmentBomb();
-        bomberBombsSpawned++;
-        bomberBombScheduleSeconds = BOMBER_BOMB_INTERVAL_SECONDS;
+        if (skillCooldownRemainingSeconds <= 0f) {
+            bombardmentCharges = MAX_BOMBARDMENT_CHARGES;
+        }
     }
 
-    private void spawnBombardmentBomb() {
+    private void tryFireBombardmentBomb() {
+        if (!isBomberMachine()
+                || bombardmentCharges <= 0
+                || skillCooldownRemainingSeconds > 0f
+                || bombardmentLaunchDelaySeconds > 0f) {
+            return;
+        }
+
+        if (!spawnBombardmentBomb()) {
+            return;
+        }
+
+        bombardmentCharges--;
+        bombardmentLaunchDelaySeconds = BOMBER_BOMB_LAUNCH_DELAY_SECONDS;
+        if (bombardmentCharges == 0) {
+            skillCooldownRemainingSeconds = SKILL_COOLDOWN_SECONDS;
+        }
+
+        notifySkillStateChangedIfNeeded();
+    }
+
+    private boolean spawnBombardmentBomb() {
         Player currentPlayer = player;
         if (currentPlayer == null || !currentPlayer.isPrepared()) {
-            return;
+            return false;
         }
 
         float width = Math.max(1f, screenWidth * BOMBER_BOMB_WIDTH_RATIO);
@@ -1322,6 +1354,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
                 height,
                 playerBulletSpeedPixelsPerSecond * BOMBER_BOMB_SPEED_MULTIPLIER
         ));
+        return true;
     }
 
     private void updateBombardmentBombs(float deltaSeconds) {
@@ -1396,6 +1429,11 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
     }
 
     private SkillState getSkillState() {
+        if (isBomberMachine()) {
+            return skillCooldownRemainingSeconds > 0f
+                    ? SkillState.COOLDOWN
+                    : SkillState.READY;
+        }
         if (skillActive) {
             return SkillState.ACTIVE;
         }
@@ -1425,15 +1463,20 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
         SkillState state = getSkillState();
         int remainingSeconds = getSkillRemainingSeconds();
         String skillLabel = getSkillLabel();
+        int currentBombardmentCharges = isBomberMachine()
+                ? bombardmentCharges
+                : -1;
         if (state == lastNotifiedSkillState
                 && remainingSeconds == lastNotifiedSkillSeconds
-                && skillLabel.equals(lastNotifiedSkillLabel)) {
+                && skillLabel.equals(lastNotifiedSkillLabel)
+                && currentBombardmentCharges == lastNotifiedBombardmentCharges) {
             return;
         }
 
         lastNotifiedSkillState = state;
         lastNotifiedSkillSeconds = remainingSeconds;
         lastNotifiedSkillLabel = skillLabel;
+        lastNotifiedBombardmentCharges = currentBombardmentCharges;
         listener.onSkillStateChanged(skillLabel, state, remainingSeconds);
     }
 
@@ -1463,7 +1506,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
     private float getSkillDurationSeconds() {
         switch (selectedMachineId) {
             case "volt_bomber":
-                return BOMBER_SKILL_DURATION_SECONDS;
+                return 0f;
             case "volt_panzer":
                 return PANZER_SKILL_DURATION_SECONDS;
             case "volt_frigate":
@@ -1480,8 +1523,8 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
         return skillActive && "volt_crewzer".equals(selectedMachineId);
     }
 
-    private boolean isBomberSkillActive() {
-        return skillActive && "volt_bomber".equals(selectedMachineId);
+    private boolean isBomberMachine() {
+        return "volt_bomber".equals(selectedMachineId);
     }
 
     private boolean isPanzerSkillActive() {
@@ -3492,10 +3535,6 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
         if (currentPlayer == null
                 || !currentPlayer.isPrepared()
                 || projectileBitmap == null) {
-            return;
-        }
-
-        if (isBomberSkillActive()) {
             return;
         }
 

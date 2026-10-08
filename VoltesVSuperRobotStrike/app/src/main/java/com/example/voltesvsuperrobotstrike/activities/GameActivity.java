@@ -230,6 +230,34 @@ public class GameActivity extends AppCompatActivity {
                 return;
             }
 
+            if (MachineSelectionActivity.MACHINE_BOMBER.equals(selectedMachineId)) {
+                int charges = gameView.getBombardmentCharges();
+                if (skillState == GameView.SkillState.COOLDOWN) {
+                    skillButton.setText(getString(
+                            R.string.game_skill_bomber_cooldown,
+                            remainingSeconds
+                    ));
+                    skillButton.setContentDescription(getString(
+                            R.string.game_skill_bomber_cooldown_description,
+                            remainingSeconds
+                    ));
+                } else {
+                    skillButton.setText(getString(
+                            R.string.game_skill_bomber_charges,
+                            charges
+                    ));
+                    skillButton.setContentDescription(getString(
+                            R.string.game_skill_bomber_ready_description,
+                            charges
+                    ));
+                }
+                skillButton.setEnabled(
+                        skillState == GameView.SkillState.READY
+                                && gameView.isSkillInputReady()
+                );
+                return;
+            }
+
             boolean ready = skillState == GameView.SkillState.READY;
             skillButton.setEnabled(ready && gameView.isSkillInputReady());
             if (skillState == GameView.SkillState.READY) {

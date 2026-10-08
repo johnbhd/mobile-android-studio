@@ -77,7 +77,11 @@ GameView and gameplay systems will be implemented in a later task.</string>
     <string name="game_change_machine_button_description">Change Volt Machine</string>
     <string name="game_main_menu_button_description">Return to main menu</string>
     <string name="game_skill_crewzer">OVERDRIVE</string>
-    <string name="game_skill_bomber">BOMBARD</string>
+    <string name="game_skill_bomber">BOMB</string>
+    <string name="game_skill_bomber_charges">BOMB &#215;%1$d</string>
+    <string name="game_skill_bomber_cooldown">BOMB &#215;0&#10;%1$d</string>
+    <string name="game_skill_bomber_ready_description">Launch Bombardment bomb, %1$d charges remaining</string>
+    <string name="game_skill_bomber_cooldown_description">Bombardment reloading, %1$d seconds remaining</string>
     <string name="game_skill_panzer">POWER</string>
     <string name="game_skill_frigate">TWIN SHOT</string>
     <string name="game_skill_lander">SHIELD</string>
