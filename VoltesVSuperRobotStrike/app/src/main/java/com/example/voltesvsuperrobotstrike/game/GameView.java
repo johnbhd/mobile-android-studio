@@ -29,9 +29,16 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
     private static final float AUTO_FIRE_INTERVAL_SECONDS = 0.35f;
     private static final float RAPID_FIRE_DURATION_SECONDS = 8f;
     private static final float RAPID_FIRE_INTERVAL_MULTIPLIER = 0.55f;
+    private static final float TWIN_SHOT_DURATION_SECONDS = 8f;
+    private static final float TWIN_SHOT_SPACING_RATIO = 0.18f;
     private static final float DOUBLE_SCORE_DURATION_SECONDS = 10f;
     private static final float POWER_UP_DROP_CHANCE = 0.10f;
     private static final int MAX_ACTIVE_POWER_UPS = 2;
+    private static final int SHIELD_POWER_UP_WEIGHT = 25;
+    private static final int RAPID_FIRE_POWER_UP_WEIGHT = 25;
+    private static final int DOUBLE_SCORE_POWER_UP_WEIGHT = 20;
+    private static final int EXTRA_LIFE_POWER_UP_WEIGHT = 15;
+    private static final int TWIN_SHOT_POWER_UP_WEIGHT = 15;
     private static final float POWER_UP_SPEED_HEIGHT_RATIO = 0.15f;
     private static final float POWER_UP_WIDTH_RATIO = 0.09f;
     private static final float POWER_UP_EFFECT_WIDTH_RATIO = 0.14f;
@@ -244,6 +251,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
     private Bitmap rapidFirePowerUpBitmap;
     private Bitmap doubleScorePowerUpBitmap;
     private Bitmap extraLifePowerUpBitmap;
+    private Bitmap twinShotPowerUpBitmap;
     private Bitmap powerUpCollectEffectBitmap;
     private int preparedPowerUpWidth;
     private int preparedPowerUpHeight;
@@ -260,10 +268,12 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
     private float playerInvulnerabilityTimerSeconds;
     private boolean shieldActive;
     private float rapidFireTimerSeconds;
+    private float twinShotTimerSeconds;
     private float doubleScoreTimerSeconds;
     private String livesLine;
     private String powerUpStatusLine;
     private int lastRapidFireStatusSeconds = -1;
+    private int lastTwinShotStatusSeconds = -1;
     private int lastDoubleScoreStatusSeconds = -1;
     private boolean lastShieldStatus;
     private String diagnosticLine;
@@ -352,6 +362,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
         playerInvulnerabilityTimerSeconds = 0f;
         shieldActive = false;
         rapidFireTimerSeconds = 0f;
+        twinShotTimerSeconds = 0f;
         doubleScoreTimerSeconds = 0f;
         updateLivesLine();
         updatePowerUpStatusLine();
@@ -1613,6 +1624,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
         rapidFirePowerUpBitmap = loadScaledPowerUpBitmap(R.drawable.powerup_rapid_fire);
         doubleScorePowerUpBitmap = loadScaledPowerUpBitmap(R.drawable.powerup_double_score);
         extraLifePowerUpBitmap = loadScaledPowerUpBitmap(R.drawable.powerup_extra_life);
+        twinShotPowerUpBitmap = loadScaledPowerUpBitmap(R.drawable.powerup_twin_shot);
 
         int effectResourceId = getResources().getIdentifier(
                 "effect_powerup_collect",
@@ -1667,7 +1679,8 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
         return shieldPowerUpBitmap != null
                 && rapidFirePowerUpBitmap != null
                 && doubleScorePowerUpBitmap != null
-                && extraLifePowerUpBitmap != null;
+                && extraLifePowerUpBitmap != null
+                && twinShotPowerUpBitmap != null;
     }
 
     private void releasePowerUpBitmaps() {
@@ -1675,11 +1688,13 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
         releaseBitmap(rapidFirePowerUpBitmap);
         releaseBitmap(doubleScorePowerUpBitmap);
         releaseBitmap(extraLifePowerUpBitmap);
+        releaseBitmap(twinShotPowerUpBitmap);
         releaseBitmap(powerUpCollectEffectBitmap);
         shieldPowerUpBitmap = null;
         rapidFirePowerUpBitmap = null;
         doubleScorePowerUpBitmap = null;
         extraLifePowerUpBitmap = null;
+        twinShotPowerUpBitmap = null;
         powerUpCollectEffectBitmap = null;
         preparedPowerUpWidth = 0;
         preparedPowerUpHeight = 0;
@@ -1746,16 +1761,24 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
 
     private PowerUpType selectPowerUpType() {
         int roll = enemyRandom.nextInt(100);
-        if (roll < 30) {
+        if (roll < SHIELD_POWER_UP_WEIGHT) {
             return PowerUpType.SHIELD;
         }
-        if (roll < 60) {
+        if (roll < SHIELD_POWER_UP_WEIGHT + RAPID_FIRE_POWER_UP_WEIGHT) {
             return PowerUpType.RAPID_FIRE;
         }
-        if (roll < 85) {
+        if (roll < SHIELD_POWER_UP_WEIGHT
+                + RAPID_FIRE_POWER_UP_WEIGHT
+                + DOUBLE_SCORE_POWER_UP_WEIGHT) {
             return PowerUpType.DOUBLE_SCORE;
         }
-        return PowerUpType.EXTRA_LIFE;
+        if (roll < SHIELD_POWER_UP_WEIGHT
+                + RAPID_FIRE_POWER_UP_WEIGHT
+                + DOUBLE_SCORE_POWER_UP_WEIGHT
+                + EXTRA_LIFE_POWER_UP_WEIGHT) {
+            return PowerUpType.EXTRA_LIFE;
+        }
+        return PowerUpType.TWIN_SHOT;
     }
 
     private Bitmap getPowerUpBitmap(PowerUpType type) {
@@ -1768,6 +1791,8 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
                 return doubleScorePowerUpBitmap;
             case EXTRA_LIFE:
                 return extraLifePowerUpBitmap;
+            case TWIN_SHOT:
+                return twinShotPowerUpBitmap;
             default:
                 return null;
         }
@@ -1776,6 +1801,9 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
     private void updatePowerUpTimers(float deltaSeconds) {
         if (rapidFireTimerSeconds > 0f) {
             rapidFireTimerSeconds = Math.max(0f, rapidFireTimerSeconds - deltaSeconds);
+        }
+        if (twinShotTimerSeconds > 0f) {
+            twinShotTimerSeconds = Math.max(0f, twinShotTimerSeconds - deltaSeconds);
         }
         if (doubleScoreTimerSeconds > 0f) {
             doubleScoreTimerSeconds = Math.max(0f, doubleScoreTimerSeconds - deltaSeconds);
@@ -1813,6 +1841,9 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
                 break;
             case RAPID_FIRE:
                 rapidFireTimerSeconds = RAPID_FIRE_DURATION_SECONDS;
+                break;
+            case TWIN_SHOT:
+                twinShotTimerSeconds = TWIN_SHOT_DURATION_SECONDS;
                 break;
             case DOUBLE_SCORE:
                 doubleScoreTimerSeconds = DOUBLE_SCORE_DURATION_SECONDS;
@@ -2103,6 +2134,12 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
 
         float playerCenterX = currentPlayer.getCenterX();
         float playerTop = currentPlayer.getCenterY() - currentPlayer.getHeight() / 2f;
+        if (twinShotTimerSeconds > 0f) {
+            float shotSpacing = currentPlayer.getWidth() * TWIN_SHOT_SPACING_RATIO;
+            spawnBullet(playerCenterX - shotSpacing, playerTop);
+            spawnBullet(playerCenterX + shotSpacing, playerTop);
+            return;
+        }
         spawnBullet(playerCenterX, playerTop);
     }
 
@@ -2177,16 +2214,21 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
         int rapidFireSeconds = rapidFireTimerSeconds > 0f
                 ? (int) Math.ceil(rapidFireTimerSeconds)
                 : 0;
+        int twinShotSeconds = twinShotTimerSeconds > 0f
+                ? (int) Math.ceil(twinShotTimerSeconds)
+                : 0;
         int doubleScoreSeconds = doubleScoreTimerSeconds > 0f
                 ? (int) Math.ceil(doubleScoreTimerSeconds)
                 : 0;
         if (rapidFireSeconds == lastRapidFireStatusSeconds
+                && twinShotSeconds == lastTwinShotStatusSeconds
                 && doubleScoreSeconds == lastDoubleScoreStatusSeconds
                 && shieldActive == lastShieldStatus) {
             return;
         }
 
         lastRapidFireStatusSeconds = rapidFireSeconds;
+        lastTwinShotStatusSeconds = twinShotSeconds;
         lastDoubleScoreStatusSeconds = doubleScoreSeconds;
         lastShieldStatus = shieldActive;
 
@@ -2196,6 +2238,9 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
         }
         if (rapidFireSeconds > 0) {
             appendPowerUpStatus(status, "RAPID ", rapidFireSeconds);
+        }
+        if (twinShotSeconds > 0) {
+            appendPowerUpStatus(status, "TWIN ", twinShotSeconds);
         }
         if (doubleScoreSeconds > 0) {
             appendPowerUpStatus(status, "2X SCORE ", doubleScoreSeconds);

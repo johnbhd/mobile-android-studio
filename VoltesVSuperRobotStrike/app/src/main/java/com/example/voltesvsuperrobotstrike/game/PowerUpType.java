@@ -4,5 +4,6 @@ public enum PowerUpType {
     SHIELD,
     RAPID_FIRE,
     DOUBLE_SCORE,
-    EXTRA_LIFE
+    EXTRA_LIFE,
+    TWIN_SHOT
 }
