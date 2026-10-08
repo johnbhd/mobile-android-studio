@@ -4,50 +4,31 @@ import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 
-public final class Bullet {
+/** A temporary Bomber skill projectile owned and updated by GameView. */
+public final class BombardmentBomb {
 
     private final Bitmap bitmap;
-    private final float speedPixelsPerSecond;
     private final float width;
     private final float height;
-    private int remainingHits;
+    private final float speedPixelsPerSecond;
 
     private float x;
     private float y;
 
-    public Bullet(
+    public BombardmentBomb(
             Bitmap bitmap,
-            float x,
-            float y,
-            float speedPixelsPerSecond
-    ) {
-        this(
-                bitmap,
-                x,
-                y,
-                bitmap.getWidth(),
-                bitmap.getHeight(),
-                speedPixelsPerSecond,
-                1
-        );
-    }
-
-    public Bullet(
-            Bitmap bitmap,
-            float x,
-            float y,
+            float centerX,
+            float top,
             float width,
             float height,
-            float speedPixelsPerSecond,
-            int remainingHits
+            float speedPixelsPerSecond
     ) {
         this.bitmap = bitmap;
-        this.x = x;
-        this.y = y;
-        this.speedPixelsPerSecond = speedPixelsPerSecond;
         this.width = Math.max(1f, width);
         this.height = Math.max(1f, height);
-        this.remainingHits = Math.max(1, remainingHits);
+        this.speedPixelsPerSecond = Math.max(0f, speedPixelsPerSecond);
+        x = centerX - this.width / 2f;
+        y = top;
     }
 
     public void update(float deltaSeconds) {
@@ -62,23 +43,23 @@ public final class Bullet {
 
         int previousColor = paint.getColor();
         Paint.Style previousStyle = paint.getStyle();
-        paint.setColor(0xFFFFD447);
+        paint.setColor(0xFFFF7A30);
         paint.setStyle(Paint.Style.FILL);
-        canvas.drawRoundRect(
-                x,
+        canvas.drawCircle(getCenterX(), y + height * 0.55f, width * 0.38f, paint);
+        paint.setColor(0xFFFFD447);
+        canvas.drawRect(
+                getCenterX() - width * 0.12f,
                 y,
-                x + width,
-                y + height,
-                Math.min(width, height) / 2f,
-                Math.min(width, height) / 2f,
+                getCenterX() + width * 0.12f,
+                y + height * 0.40f,
                 paint
         );
         paint.setColor(previousColor);
         paint.setStyle(previousStyle);
     }
 
-    public boolean isOffScreen() {
-        return y + height < 0f;
+    public boolean isPastDetonationThreshold(float thresholdY) {
+        return y <= thresholdY;
     }
 
     public float getX() {
@@ -97,8 +78,11 @@ public final class Bullet {
         return height;
     }
 
-    public boolean consumeHit() {
-        remainingHits--;
-        return remainingHits <= 0;
+    public float getCenterX() {
+        return x + width / 2f;
+    }
+
+    public float getCenterY() {
+        return y + height / 2f;
     }
 }

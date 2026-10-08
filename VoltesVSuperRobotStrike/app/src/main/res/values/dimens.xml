@@ -41,4 +41,7 @@
     <dimen name="game_pause_pilot_image_spacing">8dp</dimen>
     <dimen name="game_pause_button_height">56dp</dimen>
     <dimen name="game_pause_button_spacing">8dp</dimen>
+    <dimen name="game_skill_button_width">92dp</dimen>
+    <dimen name="game_skill_button_height">64dp</dimen>
+    <dimen name="game_skill_button_margin">12dp</dimen>
 </resources>

@@ -38,4 +38,8 @@
     <color name="game_pause_overlay">#B3040B18</color>
     <color name="game_pause_panel">#F0061B31</color>
     <color name="game_pause_border">#FF5CD6FF</color>
+    <color name="game_skill_fill">#FF132D4B</color>
+    <color name="game_skill_border">#FFFFD447</color>
+    <color name="game_skill_disabled">#CC26344A</color>
+    <color name="game_skill_disabled_border">#FF6E9AB8</color>
 </resources>

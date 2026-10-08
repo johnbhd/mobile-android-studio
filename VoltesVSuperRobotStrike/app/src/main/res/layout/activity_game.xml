@@ -14,6 +14,29 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
 
+    <androidx.appcompat.widget.AppCompatButton
+        android:id="@+id/skill_button"
+        android:layout_width="@dimen/game_skill_button_width"
+        android:layout_height="@dimen/game_skill_button_height"
+        android:layout_gravity="bottom|end"
+        android:layout_marginEnd="@dimen/game_skill_button_margin"
+        android:layout_marginBottom="@dimen/game_skill_button_margin"
+        android:background="@drawable/skill_button_background"
+        android:backgroundTint="@null"
+        android:contentDescription="@string/game_skill_button_ready_description"
+        android:fontFamily="sans-serif-condensed"
+        android:gravity="center"
+        android:maxLines="2"
+        android:minHeight="@dimen/game_skill_button_height"
+        android:minWidth="0dp"
+        android:paddingStart="6dp"
+        android:paddingEnd="6dp"
+        android:stateListAnimator="@null"
+        android:textColor="@color/white"
+        android:textSize="12sp"
+        android:textStyle="bold"
+        app:backgroundTint="@null" />
+
     <androidx.appcompat.widget.AppCompatImageButton
         android:id="@+id/pause_button"
         android:layout_width="@dimen/game_pause_button_size"

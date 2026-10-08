@@ -25,6 +25,7 @@ public class GameActivity extends AppCompatActivity {
 
     private GameView gameView;
     private View pauseButton;
+    private TextView skillButton;
     private View pauseOverlay;
     private TextView pauseMachineName;
     private TextView pauseDifficultyName;
@@ -41,6 +42,7 @@ public class GameActivity extends AppCompatActivity {
 
         gameView = findViewById(R.id.gameView);
         pauseButton = findViewById(R.id.pause_button);
+        skillButton = findViewById(R.id.skill_button);
         pauseOverlay = findViewById(R.id.pause_overlay);
         pauseMachineName = findViewById(R.id.pause_machine_name);
         pauseDifficultyName = findViewById(R.id.pause_difficulty_name);
@@ -48,6 +50,8 @@ public class GameActivity extends AppCompatActivity {
 
         applySystemBarInsets();
         setupPauseNavigation();
+        skillButton.setOnClickListener(view -> gameView.requestSkillActivation());
+        gameView.setSkillStateListener(this::handleSkillStateChanged);
         gameView.setGameOverListener(this::handleGameOver);
         configureGameFromIntent(getIntent());
 
@@ -178,6 +182,7 @@ public class GameActivity extends AppCompatActivity {
         updatePauseMenuSessionInfo();
         gameView.setMenuPaused(true);
         pauseButton.setVisibility(View.GONE);
+        skillButton.setVisibility(View.GONE);
         pauseOverlay.setVisibility(View.VISIBLE);
         pauseOverlay.requestFocus();
     }
@@ -189,11 +194,48 @@ public class GameActivity extends AppCompatActivity {
         if (gameView != null) {
             gameView.setMenuPaused(false);
         }
+        if (gameView != null && !gameView.isGameOver()) {
+            skillButton.setVisibility(View.VISIBLE);
+        }
     }
 
     private void hidePauseUi() {
         pauseOverlay.setVisibility(View.GONE);
         pauseButton.setVisibility(View.GONE);
+        skillButton.setVisibility(View.GONE);
+    }
+
+    private void handleSkillStateChanged(
+            String skillLabel,
+            GameView.SkillState skillState,
+            int remainingSeconds
+    ) {
+        runOnUiThread(() -> {
+            if (skillButton == null || isFinishing() || isDestroyed()) {
+                return;
+            }
+
+            boolean ready = skillState == GameView.SkillState.READY;
+            skillButton.setEnabled(ready && gameView.isSkillInputReady());
+            if (skillState == GameView.SkillState.READY) {
+                skillButton.setText(skillLabel);
+                skillButton.setContentDescription(
+                        getString(R.string.game_skill_button_ready_description, skillLabel)
+                );
+            } else {
+                skillButton.setText(getString(
+                        R.string.game_skill_button_timer,
+                        skillLabel,
+                        remainingSeconds
+                ));
+                int descriptionResId = skillState == GameView.SkillState.ACTIVE
+                        ? R.string.game_skill_button_active_description
+                        : R.string.game_skill_button_cooldown_description;
+                skillButton.setContentDescription(
+                        getString(descriptionResId, skillLabel, remainingSeconds)
+                );
+            }
+        });
     }
 
     private void restartMission() {
@@ -262,6 +304,12 @@ public class GameActivity extends AppCompatActivity {
             pauseButtonParams.topMargin = systemBars.top + hudMargin;
             pauseButtonParams.rightMargin = systemBars.right + hudMargin;
             pauseButton.setLayoutParams(pauseButtonParams);
+
+            FrameLayout.LayoutParams skillButtonParams =
+                    (FrameLayout.LayoutParams) skillButton.getLayoutParams();
+            skillButtonParams.bottomMargin = systemBars.bottom + hudMargin;
+            skillButtonParams.rightMargin = systemBars.right + hudMargin;
+            skillButton.setLayoutParams(skillButtonParams);
             return insets;
         });
         ViewCompat.requestApplyInsets(rootView);
@@ -280,6 +328,7 @@ public class GameActivity extends AppCompatActivity {
     protected void onDestroy() {
         if (gameView != null) {
             gameView.setGameOverListener(null);
+            gameView.setSkillStateListener(null);
             gameView.releaseGame();
         }
 

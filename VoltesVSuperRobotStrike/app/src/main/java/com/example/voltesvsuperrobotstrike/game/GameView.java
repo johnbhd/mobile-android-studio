@@ -27,6 +27,29 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
 
     private static final float MAX_DELTA_SECONDS = 0.1f;
     private static final float AUTO_FIRE_INTERVAL_SECONDS = 0.35f;
+    private static final float SKILL_COOLDOWN_SECONDS = 25f;
+    private static final float SKILL_ACTIVATION_EFFECT_SECONDS = 0.20f;
+    private static final float CREWZER_SKILL_DURATION_SECONDS = 6f;
+    private static final float CREWZER_MOVEMENT_MULTIPLIER = 1.40f;
+    private static final float CREWZER_FIRE_INTERVAL_MULTIPLIER = 0.85f;
+    private static final float CREWZER_PROJECTILE_SPEED_MULTIPLIER = 1.15f;
+    private static final float BOMBER_SKILL_DURATION_SECONDS = 4f;
+    private static final float BOMBER_BOMB_INTERVAL_SECONDS = 1.30f;
+    private static final float BOMBER_BOMB_SPEED_MULTIPLIER = 0.70f;
+    private static final float BOMBER_BOMB_WIDTH_RATIO = 0.09f;
+    private static final float BOMBER_BOMB_HEIGHT_RATIO = 0.09f;
+    private static final float BOMBER_BOMB_DETONATION_THRESHOLD_RATIO = 0.25f;
+    private static final float BOMBER_EXPLOSION_DURATION_SECONDS = 0.35f;
+    private static final float BOMBER_EXPLOSION_RADIUS_RATIO = 0.14f;
+    private static final int BOMBER_BOMB_COUNT = 3;
+    private static final float PANZER_SKILL_DURATION_SECONDS = 5f;
+    private static final float PANZER_PROJECTILE_SCALE = 1.70f;
+    private static final float PANZER_PROJECTILE_SPEED_MULTIPLIER = 0.88f;
+    private static final float PANZER_FIRE_INTERVAL_MULTIPLIER = 1.20f;
+    private static final float FRIGATE_SKILL_DURATION_SECONDS = 5f;
+    private static final float FRIGATE_BARRAGE_INTERVAL_SECONDS = 0.12f;
+    private static final float LANDER_SKILL_DURATION_SECONDS = 7f;
+    private static final float LANDER_SHIELD_RADIUS_MULTIPLIER = 0.72f;
     private static final float RAPID_FIRE_DURATION_SECONDS = 8f;
     private static final float RAPID_FIRE_INTERVAL_MULTIPLIER = 0.55f;
     private static final float TWIN_SHOT_DURATION_SECONDS = 8f;
@@ -53,6 +76,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
     private static final float HUD_HEIGHT_DP = 68f;
     private static final float PAUSE_BUTTON_SIZE_DP = 52f;
     private static final float HUD_PAUSE_GAP_DP = 6f;
+    private static final float SKILL_EFFECT_RING_WIDTH_DP = 3f;
     private static final int MAX_PLAYER_LIVES = 5;
     private static final float PLAYER_BULLET_SPEED_DP_PER_SECOND = 700f;
     private static final float BULLET_PLAYER_OVERLAP_DP = 2f;
@@ -228,6 +252,10 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
     private final Paint powerUpEffectPaint = new Paint(
             Paint.ANTI_ALIAS_FLAG | Paint.FILTER_BITMAP_FLAG
     );
+    private final Paint skillProjectilePaint = new Paint(
+            Paint.ANTI_ALIAS_FLAG | Paint.FILTER_BITMAP_FLAG
+    );
+    private final Paint skillEffectPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint hudBorderPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint heartPaint = new Paint(
             Paint.ANTI_ALIAS_FLAG | Paint.FILTER_BITMAP_FLAG
@@ -246,6 +274,8 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
     private final ArrayList<Enemy> enemies = new ArrayList<>();
     private final ArrayList<PowerUp> powerUps = new ArrayList<>();
     private final ArrayList<PowerUpCollectEffect> powerUpCollectEffects = new ArrayList<>();
+    private final ArrayList<BombardmentBomb> bombardmentBombs = new ArrayList<>();
+    private final ArrayList<SkillExplosion> skillExplosions = new ArrayList<>();
     private final Random enemyRandom = new Random();
     private volatile Player player;
     private final String scoreLabel;
@@ -256,6 +286,8 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
     private volatile boolean activityResumed;
     private volatile boolean menuPaused;
     private volatile boolean resetFrameTimeBaselineRequested;
+    private volatile boolean skillActive;
+    private volatile boolean skillActivationRequested;
     private volatile int screenWidth;
     private volatile int screenHeight;
     private volatile int topSystemInsetPixels;
@@ -313,6 +345,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
 
     private String selectedMachineId = "volt_crewzer";
     private String selectedDifficultyId = "normal";
+    private String skillLabel;
     private int score;
     private String scoreLine;
     private int playerLives = INITIAL_PLAYER_LIVES;
@@ -322,6 +355,13 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
     private float rapidFireTimerSeconds;
     private float twinShotTimerSeconds;
     private float doubleScoreTimerSeconds;
+    private float skillRemainingSeconds;
+    private float skillCooldownRemainingSeconds;
+    private float skillActivationEffectRemainingSeconds;
+    private float skillActivationCenterX;
+    private float skillActivationCenterY;
+    private float bomberBombScheduleSeconds;
+    private int bomberBombsSpawned;
     private String livesLine;
     private String powerUpStatusLine;
     private int lastRapidFireStatusSeconds = -1;
@@ -334,6 +374,25 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
     private float gameOverTimerSeconds;
     private int finalScore;
     private volatile GameOverListener gameOverListener;
+    private volatile SkillStateListener skillStateListener;
+    private SkillState lastNotifiedSkillState;
+    private int lastNotifiedSkillSeconds = -1;
+    private String lastNotifiedSkillLabel;
+
+    public enum SkillState {
+        READY,
+        ACTIVE,
+        COOLDOWN
+    }
+
+    public interface SkillStateListener {
+
+        void onSkillStateChanged(
+                String skillLabel,
+                SkillState skillState,
+                int remainingSeconds
+        );
+    }
 
     public interface GameOverListener {
 
@@ -381,14 +440,35 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
         gameOverListener = listener;
     }
 
+    public void setSkillStateListener(SkillStateListener listener) {
+        skillStateListener = listener;
+        lastNotifiedSkillState = null;
+        lastNotifiedSkillSeconds = -1;
+        lastNotifiedSkillLabel = null;
+        notifySkillStateChangedIfNeeded();
+    }
+
+    public void requestSkillActivation() {
+        if (menuPaused || gameOver || !running || !surfaceReady) {
+            return;
+        }
+
+        skillActivationRequested = true;
+    }
+
     public void setMenuPaused(boolean paused) {
         if (paused && gameOver) {
             return;
         }
 
         menuPaused = paused;
+        if (paused) {
+            skillActivationRequested = false;
+        }
         resetTouchState();
         resetFrameTimeBaselineRequested = true;
+        lastNotifiedSkillState = null;
+        notifySkillStateChangedIfNeeded();
     }
 
     public boolean isMenuPaused() {
@@ -397,6 +477,10 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
 
     public boolean isGameOver() {
         return gameOver;
+    }
+
+    public boolean isSkillInputReady() {
+        return running && surfaceReady && !menuPaused && !gameOver;
     }
 
     private void initializePaints() {
@@ -423,6 +507,10 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
         hudBorderPaint.setStyle(Paint.Style.STROKE);
         hudBorderPaint.setStrokeWidth(Math.max(1f, density));
 
+        skillEffectPaint.setStrokeWidth(
+                Math.max(1f, SKILL_EFFECT_RING_WIDTH_DP * density)
+        );
+
         scorePaint.setColor(ContextCompat.getColor(
                 getContext(),
                 R.color.game_hud_value
@@ -448,11 +536,15 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
         selectedDifficultyId = isSupportedDifficultyId(selectedDifficulty)
                 ? selectedDifficulty
                 : "normal";
+        skillLabel = resolveSkillLabel(selectedMachineId);
 
         playerBullets.clear();
         enemyBullets.clear();
         powerUps.clear();
         powerUpCollectEffects.clear();
+        bombardmentBombs.clear();
+        skillExplosions.clear();
+        skillActivationRequested = false;
         fireCooldownSeconds = AUTO_FIRE_INTERVAL_SECONDS;
         releaseProjectileBitmap();
         enemies.clear();
@@ -471,6 +563,14 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
         rapidFireTimerSeconds = 0f;
         twinShotTimerSeconds = 0f;
         doubleScoreTimerSeconds = 0f;
+        skillActive = false;
+        skillRemainingSeconds = 0f;
+        skillCooldownRemainingSeconds = 0f;
+        skillActivationEffectRemainingSeconds = 0f;
+        skillActivationCenterX = 0f;
+        skillActivationCenterY = 0f;
+        bomberBombScheduleSeconds = 0f;
+        bomberBombsSpawned = 0;
         gameOver = false;
         gameOverCallbackSent = false;
         gameOverTimerSeconds = 0f;
@@ -479,6 +579,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
         resetFrameTimeBaselineRequested = true;
         updateLivesLine();
         updatePowerUpStatusLine();
+        notifySkillStateChangedIfNeeded();
 
         int drawableResourceId = getMachineDrawableResource(selectedMachineId);
         Player currentPlayer = player;
@@ -514,12 +615,16 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
 
     public void resumeGame() {
         activityResumed = true;
+        lastNotifiedSkillState = null;
         startGameThreadIfReady();
+        notifySkillStateChangedIfNeeded();
     }
 
     public void pauseGame() {
         activityResumed = false;
+        lastNotifiedSkillState = null;
         stopGameThread();
+        notifySkillStateChangedIfNeeded();
     }
 
     public void releaseGame() {
@@ -531,6 +636,8 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
         enemyBullets.clear();
         powerUps.clear();
         powerUpCollectEffects.clear();
+        bombardmentBombs.clear();
+        skillExplosions.clear();
         releaseProjectileBitmap();
         enemies.clear();
         releaseEnemyBitmaps();
@@ -594,6 +701,8 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
                 enemyBullets.clear();
                 powerUps.clear();
                 powerUpCollectEffects.clear();
+                bombardmentBombs.clear();
+                skillExplosions.clear();
                 fireCooldownSeconds = AUTO_FIRE_INTERVAL_SECONDS;
                 enemies.clear();
                 enemySpawnCooldownSeconds = ENEMY_FIRST_SPAWN_DELAY_SECONDS;
@@ -714,6 +823,8 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
             return;
         }
 
+        processSkillActivationRequest();
+        updateMachineSkill(deltaSeconds);
         updatePlayerInvulnerability(deltaSeconds);
         updatePowerUpTimers(deltaSeconds);
         scrollingBackground.update(deltaSeconds);
@@ -785,13 +896,20 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
             drawPowerUps(canvas);
             drawEnemies(canvas);
             drawPlayerBullets(canvas);
+            drawBombardmentBombs(canvas);
             drawEnemyBullets(canvas);
+            drawSkillExplosions(canvas);
             drawPowerUpCollectEffects(canvas);
+
+            drawCrewzerOverdrive(canvas);
 
             Player currentPlayer = player;
             if (currentPlayer != null && shouldDrawPlayer()) {
                 currentPlayer.draw(canvas);
             }
+
+            drawLanderEnergyShield(canvas);
+            drawSkillActivationEffect(canvas);
 
             drawHud(canvas);
         } finally {
@@ -807,10 +925,433 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
         }
     }
 
+    private void drawBombardmentBombs(Canvas canvas) {
+        for (BombardmentBomb bomb : bombardmentBombs) {
+            bomb.draw(canvas, skillProjectilePaint);
+        }
+    }
+
     private void drawEnemyBullets(Canvas canvas) {
         for (EnemyBullet enemyBullet : enemyBullets) {
             enemyBullet.draw(canvas, enemyProjectilePaint);
         }
+    }
+
+    private void drawSkillExplosions(Canvas canvas) {
+        for (SkillExplosion explosion : skillExplosions) {
+            explosion.draw(canvas, skillEffectPaint);
+        }
+    }
+
+    private void drawCrewzerOverdrive(Canvas canvas) {
+        if (!isCrewzerSkillActive()) {
+            return;
+        }
+
+        Player currentPlayer = player;
+        if (currentPlayer == null || !currentPlayer.isPrepared()) {
+            return;
+        }
+
+        int previousColor = skillEffectPaint.getColor();
+        int previousAlpha = skillEffectPaint.getAlpha();
+        Paint.Style previousStyle = skillEffectPaint.getStyle();
+
+        float radius = Math.max(
+                currentPlayer.getWidth(),
+                currentPlayer.getHeight()
+        ) * 0.72f;
+        skillEffectPaint.setColor(0xFF5CD6FF);
+        skillEffectPaint.setAlpha(145);
+        skillEffectPaint.setStyle(Paint.Style.STROKE);
+        canvas.drawCircle(
+                currentPlayer.getCenterX(),
+                currentPlayer.getCenterY(),
+                radius,
+                skillEffectPaint
+        );
+        skillEffectPaint.setAlpha(75);
+        canvas.drawCircle(
+                currentPlayer.getCenterX(),
+                currentPlayer.getCenterY(),
+                radius * 1.14f,
+                skillEffectPaint
+        );
+
+        skillEffectPaint.setColor(previousColor);
+        skillEffectPaint.setAlpha(previousAlpha);
+        skillEffectPaint.setStyle(previousStyle);
+    }
+
+    private void drawLanderEnergyShield(Canvas canvas) {
+        if (!isLanderSkillActive()) {
+            return;
+        }
+
+        Player currentPlayer = player;
+        if (currentPlayer == null || !currentPlayer.isPrepared()) {
+            return;
+        }
+
+        int previousColor = skillEffectPaint.getColor();
+        int previousAlpha = skillEffectPaint.getAlpha();
+        Paint.Style previousStyle = skillEffectPaint.getStyle();
+
+        float radius = Math.max(
+                currentPlayer.getWidth(),
+                currentPlayer.getHeight()
+        ) * LANDER_SHIELD_RADIUS_MULTIPLIER;
+        skillEffectPaint.setColor(0xFF65D38A);
+        skillEffectPaint.setAlpha(38);
+        skillEffectPaint.setStyle(Paint.Style.FILL);
+        canvas.drawCircle(
+                currentPlayer.getCenterX(),
+                currentPlayer.getCenterY(),
+                radius,
+                skillEffectPaint
+        );
+        skillEffectPaint.setAlpha(190);
+        skillEffectPaint.setStyle(Paint.Style.STROKE);
+        canvas.drawCircle(
+                currentPlayer.getCenterX(),
+                currentPlayer.getCenterY(),
+                radius,
+                skillEffectPaint
+        );
+
+        skillEffectPaint.setColor(previousColor);
+        skillEffectPaint.setAlpha(previousAlpha);
+        skillEffectPaint.setStyle(previousStyle);
+    }
+
+    private void drawSkillActivationEffect(Canvas canvas) {
+        if (skillActivationEffectRemainingSeconds <= 0f) {
+            return;
+        }
+
+        float progress = 1f - skillActivationEffectRemainingSeconds
+                / SKILL_ACTIVATION_EFFECT_SECONDS;
+        float radius = Math.max(18f * density, screenWidth * 0.08f) * (0.55f + progress);
+        int alpha = Math.round(255f * (1f - progress));
+        int previousColor = skillEffectPaint.getColor();
+        int previousAlpha = skillEffectPaint.getAlpha();
+        Paint.Style previousStyle = skillEffectPaint.getStyle();
+
+        skillEffectPaint.setColor(0xFFFFD447);
+        skillEffectPaint.setAlpha(alpha);
+        skillEffectPaint.setStyle(Paint.Style.STROKE);
+        canvas.drawCircle(
+                skillActivationCenterX,
+                skillActivationCenterY,
+                radius,
+                skillEffectPaint
+        );
+        canvas.drawLine(
+                skillActivationCenterX - radius * 1.35f,
+                skillActivationCenterY,
+                skillActivationCenterX + radius * 1.35f,
+                skillActivationCenterY,
+                skillEffectPaint
+        );
+        canvas.drawLine(
+                skillActivationCenterX,
+                skillActivationCenterY - radius * 1.35f,
+                skillActivationCenterX,
+                skillActivationCenterY + radius * 1.35f,
+                skillEffectPaint
+        );
+
+        skillEffectPaint.setColor(previousColor);
+        skillEffectPaint.setAlpha(previousAlpha);
+        skillEffectPaint.setStyle(previousStyle);
+    }
+
+    private void processSkillActivationRequest() {
+        if (!skillActivationRequested) {
+            return;
+        }
+
+        skillActivationRequested = false;
+        if (gameOver
+                || menuPaused
+                || skillActive
+                || skillCooldownRemainingSeconds > 0f) {
+            return;
+        }
+
+        startSelectedMachineSkill();
+    }
+
+    private void startSelectedMachineSkill() {
+        float durationSeconds = getSkillDurationSeconds();
+        if (durationSeconds <= 0f) {
+            return;
+        }
+
+        Player currentPlayer = player;
+        if (currentPlayer == null || !currentPlayer.isPrepared()) {
+            return;
+        }
+
+        skillActive = true;
+        skillRemainingSeconds = durationSeconds;
+        skillActivationEffectRemainingSeconds = SKILL_ACTIVATION_EFFECT_SECONDS;
+        skillActivationCenterX = currentPlayer.getCenterX();
+        skillActivationCenterY = currentPlayer.getCenterY();
+        fireCooldownSeconds = 0f;
+
+        if (isBomberSkillActive()) {
+            bomberBombsSpawned = 0;
+            bomberBombScheduleSeconds = 0f;
+        }
+
+        notifySkillStateChangedIfNeeded();
+    }
+
+    private void updateMachineSkill(float deltaSeconds) {
+        if (skillActivationEffectRemainingSeconds > 0f) {
+            skillActivationEffectRemainingSeconds = Math.max(
+                    0f,
+                    skillActivationEffectRemainingSeconds - deltaSeconds
+            );
+        }
+
+        if (skillActive) {
+            skillRemainingSeconds = Math.max(
+                    0f,
+                    skillRemainingSeconds - deltaSeconds
+            );
+
+            if (isBomberSkillActive()) {
+                updateBombardmentSchedule(deltaSeconds);
+            }
+
+            if (skillRemainingSeconds <= 0f) {
+                finishMachineSkill();
+            }
+        } else if (skillCooldownRemainingSeconds > 0f) {
+            skillCooldownRemainingSeconds = Math.max(
+                    0f,
+                    skillCooldownRemainingSeconds - deltaSeconds
+            );
+        }
+
+        updateBombardmentBombs(deltaSeconds);
+        updateSkillExplosions(deltaSeconds);
+        notifySkillStateChangedIfNeeded();
+    }
+
+    private void finishMachineSkill() {
+        skillActive = false;
+        skillRemainingSeconds = 0f;
+        skillCooldownRemainingSeconds = SKILL_COOLDOWN_SECONDS;
+        fireCooldownSeconds = 0f;
+        notifySkillStateChangedIfNeeded();
+    }
+
+    private void updateBombardmentSchedule(float deltaSeconds) {
+        if (bomberBombsSpawned >= BOMBER_BOMB_COUNT) {
+            return;
+        }
+
+        bomberBombScheduleSeconds -= deltaSeconds;
+        if (bomberBombScheduleSeconds > 0f) {
+            return;
+        }
+
+        spawnBombardmentBomb();
+        bomberBombsSpawned++;
+        bomberBombScheduleSeconds = BOMBER_BOMB_INTERVAL_SECONDS;
+    }
+
+    private void spawnBombardmentBomb() {
+        Player currentPlayer = player;
+        if (currentPlayer == null || !currentPlayer.isPrepared()) {
+            return;
+        }
+
+        float width = Math.max(1f, screenWidth * BOMBER_BOMB_WIDTH_RATIO);
+        float height = Math.max(1f, screenHeight * BOMBER_BOMB_HEIGHT_RATIO);
+        float top = currentPlayer.getCenterY() - currentPlayer.getHeight() / 2f - height;
+        bombardmentBombs.add(new BombardmentBomb(
+                null,
+                currentPlayer.getCenterX(),
+                top,
+                width,
+                height,
+                playerBulletSpeedPixelsPerSecond * BOMBER_BOMB_SPEED_MULTIPLIER
+        ));
+    }
+
+    private void updateBombardmentBombs(float deltaSeconds) {
+        float detonationThreshold = screenHeight * BOMBER_BOMB_DETONATION_THRESHOLD_RATIO;
+        for (int index = bombardmentBombs.size() - 1; index >= 0; index--) {
+            BombardmentBomb bomb = bombardmentBombs.get(index);
+            bomb.update(deltaSeconds);
+
+            int enemyIndex = findBombCollision(bomb);
+            if (enemyIndex >= 0 || bomb.isPastDetonationThreshold(detonationThreshold)) {
+                detonateBomb(index, bomb);
+            }
+        }
+    }
+
+    private int findBombCollision(BombardmentBomb bomb) {
+        for (int enemyIndex = enemies.size() - 1; enemyIndex >= 0; enemyIndex--) {
+            Enemy enemy = enemies.get(enemyIndex);
+            if (rectanglesOverlap(
+                    bomb.getX(),
+                    bomb.getY(),
+                    bomb.getX() + bomb.getWidth(),
+                    bomb.getY() + bomb.getHeight(),
+                    enemy.getX(),
+                    enemy.getY(),
+                    enemy.getX() + enemy.getWidth(),
+                    enemy.getY() + enemy.getHeight()
+            )) {
+                return enemyIndex;
+            }
+        }
+        return -1;
+    }
+
+    private void detonateBomb(int bombIndex, BombardmentBomb bomb) {
+        bombardmentBombs.remove(bombIndex);
+        float radius = screenWidth * BOMBER_EXPLOSION_RADIUS_RATIO;
+        skillExplosions.add(new SkillExplosion(
+                bomb.getCenterX(),
+                bomb.getCenterY(),
+                radius,
+                BOMBER_EXPLOSION_DURATION_SECONDS
+        ));
+
+        resolveBombExplosion(bomb.getCenterX(), bomb.getCenterY(), radius);
+    }
+
+    private void resolveBombExplosion(float centerX, float centerY, float radius) {
+        float radiusSquared = radius * radius;
+        for (int enemyIndex = enemies.size() - 1; enemyIndex >= 0; enemyIndex--) {
+            Enemy enemy = enemies.get(enemyIndex);
+            float dx = enemy.getCenterX() - centerX;
+            float dy = enemy.getY() + enemy.getHeight() / 2f - centerY;
+            if (dx * dx + dy * dy > radiusSquared) {
+                continue;
+            }
+
+            enemies.remove(enemyIndex);
+            awardEnemyDestruction(enemy);
+        }
+    }
+
+    private void updateSkillExplosions(float deltaSeconds) {
+        for (int index = skillExplosions.size() - 1; index >= 0; index--) {
+            SkillExplosion explosion = skillExplosions.get(index);
+            explosion.update(deltaSeconds);
+            if (explosion.isFinished()) {
+                skillExplosions.remove(index);
+            }
+        }
+    }
+
+    private SkillState getSkillState() {
+        if (skillActive) {
+            return SkillState.ACTIVE;
+        }
+        if (skillCooldownRemainingSeconds > 0f) {
+            return SkillState.COOLDOWN;
+        }
+        return SkillState.READY;
+    }
+
+    private int getSkillRemainingSeconds() {
+        SkillState state = getSkillState();
+        if (state == SkillState.ACTIVE) {
+            return (int) Math.ceil(skillRemainingSeconds);
+        }
+        if (state == SkillState.COOLDOWN) {
+            return (int) Math.ceil(skillCooldownRemainingSeconds);
+        }
+        return 0;
+    }
+
+    private void notifySkillStateChangedIfNeeded() {
+        SkillStateListener listener = skillStateListener;
+        if (listener == null) {
+            return;
+        }
+
+        SkillState state = getSkillState();
+        int remainingSeconds = getSkillRemainingSeconds();
+        String skillLabel = getSkillLabel();
+        if (state == lastNotifiedSkillState
+                && remainingSeconds == lastNotifiedSkillSeconds
+                && skillLabel.equals(lastNotifiedSkillLabel)) {
+            return;
+        }
+
+        lastNotifiedSkillState = state;
+        lastNotifiedSkillSeconds = remainingSeconds;
+        lastNotifiedSkillLabel = skillLabel;
+        listener.onSkillStateChanged(skillLabel, state, remainingSeconds);
+    }
+
+    private String getSkillLabel() {
+        if (skillLabel == null) {
+            skillLabel = resolveSkillLabel(selectedMachineId);
+        }
+        return skillLabel;
+    }
+
+    private String resolveSkillLabel(String machineId) {
+        switch (machineId) {
+            case "volt_bomber":
+                return getResources().getString(R.string.game_skill_bomber);
+            case "volt_panzer":
+                return getResources().getString(R.string.game_skill_panzer);
+            case "volt_frigate":
+                return getResources().getString(R.string.game_skill_frigate);
+            case "volt_lander":
+                return getResources().getString(R.string.game_skill_lander);
+            case "volt_crewzer":
+            default:
+                return getResources().getString(R.string.game_skill_crewzer);
+        }
+    }
+
+    private float getSkillDurationSeconds() {
+        switch (selectedMachineId) {
+            case "volt_bomber":
+                return BOMBER_SKILL_DURATION_SECONDS;
+            case "volt_panzer":
+                return PANZER_SKILL_DURATION_SECONDS;
+            case "volt_frigate":
+                return FRIGATE_SKILL_DURATION_SECONDS;
+            case "volt_lander":
+                return LANDER_SKILL_DURATION_SECONDS;
+            case "volt_crewzer":
+            default:
+                return CREWZER_SKILL_DURATION_SECONDS;
+        }
+    }
+
+    private boolean isCrewzerSkillActive() {
+        return skillActive && "volt_crewzer".equals(selectedMachineId);
+    }
+
+    private boolean isBomberSkillActive() {
+        return skillActive && "volt_bomber".equals(selectedMachineId);
+    }
+
+    private boolean isPanzerSkillActive() {
+        return skillActive && "volt_panzer".equals(selectedMachineId);
+    }
+
+    private boolean isFrigateSkillActive() {
+        return skillActive && "volt_frigate".equals(selectedMachineId);
+    }
+
+    private boolean isLanderSkillActive() {
+        return skillActive && "volt_lander".equals(selectedMachineId);
     }
 
     private void drawEnemies(Canvas canvas) {
@@ -2210,19 +2751,27 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
                     continue;
                 }
 
-                float enemyCenterX = enemy.getCenterX();
-                float enemyCenterY = enemy.getY() + enemy.getHeight() / 2f;
-                playerBullets.remove(bulletIndex);
+                boolean bulletConsumed = bullet.consumeHit();
+                if (bulletConsumed) {
+                    playerBullets.remove(bulletIndex);
+                }
                 enemies.remove(enemyIndex);
-                int enemyScore = getScoreForEnemy(enemy);
-                score += doubleScoreTimerSeconds > 0f
-                        ? enemyScore * 2
-                        : enemyScore;
-                updateScoreLine();
-                spawnPowerUp(enemyCenterX, enemyCenterY);
+                awardEnemyDestruction(enemy);
                 break;
             }
         }
+    }
+
+    private void awardEnemyDestruction(Enemy enemy) {
+        int enemyScore = getScoreForEnemy(enemy);
+        score += doubleScoreTimerSeconds > 0f
+                ? enemyScore * 2
+                : enemyScore;
+        updateScoreLine();
+        spawnPowerUp(
+                enemy.getCenterX(),
+                enemy.getY() + enemy.getHeight() / 2f
+        );
     }
 
     private void spawnPowerUp(float centerX, float centerY) {
@@ -2406,7 +2955,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
 
     private void checkPlayerEnemyCollisions() {
         Player currentPlayer = player;
-        if (!canPlayerTakeDamage(currentPlayer)) {
+        if (currentPlayer == null || !currentPlayer.isPrepared()) {
             return;
         }
 
@@ -2416,10 +2965,21 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
                 continue;
             }
 
-            enemies.remove(enemyIndex);
-            damagePlayer();
+            if (isLanderSkillActive()) {
+                enemies.remove(enemyIndex);
+                awardEnemyDestruction(enemy);
+            } else if (isCrewzerSkillActive()) {
+                // Crewzer immunity absorbs the contact without consuming Shield.
+            } else if (canPlayerTakeDamage(currentPlayer)) {
+                enemies.remove(enemyIndex);
+                damagePlayer();
+            }
             break;
         }
+    }
+
+    private boolean isMachineSkillProtectingPlayer() {
+        return isCrewzerSkillActive() || isLanderSkillActive();
     }
 
     private boolean canPlayerTakeDamage(Player currentPlayer) {
@@ -2430,7 +2990,10 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
     }
 
     private void damagePlayer() {
-        if (gameOver || playerLives <= 0 || playerInvulnerable) {
+        if (gameOver
+                || playerLives <= 0
+                || playerInvulnerable
+                || isMachineSkillProtectingPlayer()) {
             return;
         }
 
@@ -2451,10 +3014,17 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
             finalScore = score;
             playerInvulnerable = false;
             playerInvulnerabilityTimerSeconds = 0f;
+            skillActive = false;
+            skillRemainingSeconds = 0f;
+            skillActivationRequested = false;
+            skillActivationEffectRemainingSeconds = 0f;
+            bombardmentBombs.clear();
+            skillExplosions.clear();
             playerBullets.clear();
             enemyBullets.clear();
             powerUps.clear();
             powerUpCollectEffects.clear();
+            notifySkillStateChangedIfNeeded();
         }
     }
 
@@ -2489,13 +3059,21 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
         float enemyRight = enemy.getX() + enemy.getWidth() - enemyHorizontalInset;
         float enemyBottom = enemy.getY() + enemy.getHeight() - enemyVerticalInset;
 
-        return intersectsPlayerBounds(
-                currentPlayer,
-                enemyLeft,
-                enemyTop,
-                enemyRight,
-                enemyBottom
-        );
+        return isLanderSkillActive()
+                ? intersectsPlayerShieldBounds(
+                        currentPlayer,
+                        enemyLeft,
+                        enemyTop,
+                        enemyRight,
+                        enemyBottom
+                )
+                : intersectsPlayerBounds(
+                        currentPlayer,
+                        enemyLeft,
+                        enemyTop,
+                        enemyRight,
+                        enemyBottom
+                );
     }
 
     private boolean intersectsPlayerAndPowerUp(
@@ -2528,13 +3106,21 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
                 + enemyBullet.getHeight()
                 - bulletVerticalInset;
 
-        return intersectsPlayerBounds(
-                currentPlayer,
-                bulletLeft,
-                bulletTop,
-                bulletRight,
-                bulletBottom
-        );
+        return isLanderSkillActive()
+                ? intersectsPlayerShieldBounds(
+                        currentPlayer,
+                        bulletLeft,
+                        bulletTop,
+                        bulletRight,
+                        bulletBottom
+                )
+                : intersectsPlayerBounds(
+                        currentPlayer,
+                        bulletLeft,
+                        bulletTop,
+                        bulletRight,
+                        bulletBottom
+                );
     }
 
     private boolean intersectsPlayerBounds(
@@ -2560,6 +3146,31 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
                 playerTop,
                 playerRight,
                 playerBottom,
+                targetLeft,
+                targetTop,
+                targetRight,
+                targetBottom
+        );
+    }
+
+    private boolean intersectsPlayerShieldBounds(
+            Player currentPlayer,
+            float targetLeft,
+            float targetTop,
+            float targetRight,
+            float targetBottom
+    ) {
+        float radius = Math.max(
+                currentPlayer.getWidth(),
+                currentPlayer.getHeight()
+        ) * LANDER_SHIELD_RADIUS_MULTIPLIER;
+        float centerX = currentPlayer.getCenterX();
+        float centerY = currentPlayer.getCenterY();
+        return rectanglesOverlap(
+                centerX - radius,
+                centerY - radius,
+                centerX + radius,
+                centerY + radius,
                 targetLeft,
                 targetTop,
                 targetRight,
@@ -2616,6 +3227,10 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
             return;
         }
 
+        if (isBomberSkillActive()) {
+            return;
+        }
+
         fireCooldownSeconds -= deltaSeconds;
         if (fireCooldownSeconds > 0f) {
             return;
@@ -2626,9 +3241,22 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
     }
 
     private float getCurrentPlayerFireIntervalSeconds() {
-        return rapidFireTimerSeconds > 0f
-                ? AUTO_FIRE_INTERVAL_SECONDS * RAPID_FIRE_INTERVAL_MULTIPLIER
-                : AUTO_FIRE_INTERVAL_SECONDS;
+        if (isFrigateSkillActive()) {
+            return FRIGATE_BARRAGE_INTERVAL_SECONDS;
+        }
+
+        float intervalSeconds = AUTO_FIRE_INTERVAL_SECONDS;
+        if (isPanzerSkillActive()) {
+            intervalSeconds *= PANZER_FIRE_INTERVAL_MULTIPLIER;
+        }
+        if (isCrewzerSkillActive()) {
+            intervalSeconds *= CREWZER_FIRE_INTERVAL_MULTIPLIER;
+        }
+        if (rapidFireTimerSeconds > 0f) {
+            intervalSeconds *= RAPID_FIRE_INTERVAL_MULTIPLIER;
+        }
+
+        return Math.max(0.23f, intervalSeconds);
     }
 
     private void firePlayerProjectile() {
@@ -2639,24 +3267,91 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
 
         float playerCenterX = currentPlayer.getCenterX();
         float playerTop = currentPlayer.getCenterY() - currentPlayer.getHeight() / 2f;
-        if (twinShotTimerSeconds > 0f) {
-            float shotSpacing = currentPlayer.getWidth() * TWIN_SHOT_SPACING_RATIO;
-            spawnBullet(playerCenterX - shotSpacing, playerTop);
-            spawnBullet(playerCenterX + shotSpacing, playerTop);
+        if (isPanzerSkillActive()) {
+            spawnPanzerPowerShot(playerCenterX, playerTop);
             return;
         }
-        spawnBullet(playerCenterX, playerTop);
+
+        boolean twinShotActive = !isFrigateSkillActive()
+                && (isCrewzerSkillActive() || twinShotTimerSeconds > 0f);
+        Bitmap shotBitmap = isFrigateSkillActive() ? null : projectileBitmap;
+        float projectileSpeed = getCurrentPlayerProjectileSpeed();
+        if (twinShotActive) {
+            float shotSpacing = currentPlayer.getWidth() * TWIN_SHOT_SPACING_RATIO;
+            spawnBullet(
+                    playerCenterX - shotSpacing,
+                    playerTop,
+                    shotBitmap,
+                    projectileBitmap.getWidth(),
+                    projectileBitmap.getHeight(),
+                    projectileSpeed,
+                    1
+            );
+            spawnBullet(
+                    playerCenterX + shotSpacing,
+                    playerTop,
+                    shotBitmap,
+                    projectileBitmap.getWidth(),
+                    projectileBitmap.getHeight(),
+                    projectileSpeed,
+                    1
+            );
+            return;
+        }
+
+        spawnBullet(
+                playerCenterX,
+                playerTop,
+                shotBitmap,
+                projectileBitmap.getWidth(),
+                projectileBitmap.getHeight(),
+                projectileSpeed,
+                1
+        );
     }
 
-    private void spawnBullet(float centerX, float playerTop) {
-        float bulletX = centerX - projectileBitmap.getWidth() / 2f;
-        float bulletY = playerTop - projectileBitmap.getHeight() + bulletPlayerOverlapPixels;
+    private float getCurrentPlayerProjectileSpeed() {
+        float speed = playerBulletSpeedPixelsPerSecond;
+        if (isCrewzerSkillActive()) {
+            speed *= CREWZER_PROJECTILE_SPEED_MULTIPLIER;
+        }
+        return speed;
+    }
+
+    private void spawnPanzerPowerShot(float centerX, float playerTop) {
+        float width = projectileBitmap.getWidth() * PANZER_PROJECTILE_SCALE;
+        float height = projectileBitmap.getHeight() * PANZER_PROJECTILE_SCALE;
+        spawnBullet(
+                centerX,
+                playerTop,
+                null,
+                width,
+                height,
+                playerBulletSpeedPixelsPerSecond * PANZER_PROJECTILE_SPEED_MULTIPLIER,
+                2
+        );
+    }
+
+    private void spawnBullet(
+            float centerX,
+            float playerTop,
+            Bitmap bitmap,
+            float width,
+            float height,
+            float speedPixelsPerSecond,
+            int remainingHits
+    ) {
+        float bulletX = centerX - width / 2f;
+        float bulletY = playerTop - height + bulletPlayerOverlapPixels;
 
         playerBullets.add(new Bullet(
-                projectileBitmap,
+                bitmap,
                 bulletX,
                 bulletY,
-                playerBulletSpeedPixelsPerSecond
+                width,
+                height,
+                speedPixelsPerSecond,
+                remainingHits
         ));
     }
 
@@ -2685,7 +3380,8 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
             }
 
             enemyBullets.remove(index);
-            if (canPlayerTakeDamage(currentPlayer)) {
+            if (!isMachineSkillProtectingPlayer()
+                    && canPlayerTakeDamage(currentPlayer)) {
                 damagePlayer();
             }
         }
@@ -3000,8 +3696,13 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
                     return false;
                 }
 
-                float dragDeltaX = event.getX(pointerIndex) - dragStartTouchX;
-                float dragDeltaY = event.getY(pointerIndex) - dragStartTouchY;
+                float movementMultiplier = isCrewzerSkillActive()
+                        ? CREWZER_MOVEMENT_MULTIPLIER
+                        : 1f;
+                float dragDeltaX = (event.getX(pointerIndex) - dragStartTouchX)
+                        * movementMultiplier;
+                float dragDeltaY = (event.getY(pointerIndex) - dragStartTouchY)
+                        * movementMultiplier;
                 currentPlayer.setTargetCenter(
                         dragStartPlayerCenterX + dragDeltaX,
                         dragStartPlayerCenterY + dragDeltaY

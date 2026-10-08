@@ -76,6 +76,15 @@ GameView and gameplay systems will be implemented in a later task.</string>
     <string name="game_restart_button_description">Restart mission</string>
     <string name="game_change_machine_button_description">Change Volt Machine</string>
     <string name="game_main_menu_button_description">Return to main menu</string>
+    <string name="game_skill_crewzer">OVERDRIVE</string>
+    <string name="game_skill_bomber">BOMBARD</string>
+    <string name="game_skill_panzer">POWER</string>
+    <string name="game_skill_frigate">BARRAGE</string>
+    <string name="game_skill_lander">SHIELD</string>
+    <string name="game_skill_button_timer">%1$s&#10;%2$d</string>
+    <string name="game_skill_button_ready_description">Activate %1$s</string>
+    <string name="game_skill_button_active_description">%1$s active, %2$d seconds remaining</string>
+    <string name="game_skill_button_cooldown_description">%1$s recharging, %2$d seconds remaining</string>
 
     <string name="game_over_title">GAME OVER</string>
     <string name="game_over_final_score">FINAL SCORE</string>
