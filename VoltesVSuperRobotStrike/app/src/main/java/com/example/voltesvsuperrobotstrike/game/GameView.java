@@ -7,8 +7,10 @@ import android.graphics.Canvas;
 import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Typeface;
+import android.os.Build;
 import android.util.AttributeSet;
 import android.view.MotionEvent;
+import android.view.Surface;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 
@@ -233,7 +235,10 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
             ENEMY_HEAVY_BOMBER,
             ENEMY_CRAB
     };
-    private static final long TARGET_FRAME_DURATION_NANOS = 1_000_000_000L / 60L;
+    private static final int TARGET_FRAME_RATE = 60;
+    private static final long NANOS_PER_SECOND = 1_000_000_000L;
+    private static final long TARGET_FRAME_DURATION_NANOS =
+            NANOS_PER_SECOND / TARGET_FRAME_RATE;
     private static final long THREAD_JOIN_TIMEOUT_MILLIS = 500L;
 
     private final SurfaceHolder surfaceHolder;
@@ -670,6 +675,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
     @Override
     public void surfaceCreated(SurfaceHolder holder) {
         surfaceReady = true;
+        applySurfaceFrameRateHint();
         updateSurfaceDimensions(getWidth(), getHeight());
         startGameThreadIfReady();
         lastNotifiedSkillState = null;
@@ -683,6 +689,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
             int width,
             int height
     ) {
+        applySurfaceFrameRateHint();
         updateSurfaceDimensions(width, height);
     }
 
@@ -690,6 +697,26 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
     public void surfaceDestroyed(SurfaceHolder holder) {
         surfaceReady = false;
         stopGameThread();
+    }
+
+    private void applySurfaceFrameRateHint() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) {
+            return;
+        }
+
+        Surface surface = surfaceHolder.getSurface();
+        if (surface == null || !surface.isValid()) {
+            return;
+        }
+
+        try {
+            surface.setFrameRate(
+                    TARGET_FRAME_RATE,
+                    Surface.FRAME_RATE_COMPATIBILITY_DEFAULT
+            );
+        } catch (IllegalArgumentException | IllegalStateException ignored) {
+            // The hint is optional; keep the existing Canvas pacing if it cannot apply.
+        }
     }
 
     private void updateSurfaceDimensions(int width, int height) {
@@ -790,7 +817,9 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
 
     @Override
     public void run() {
-        long previousFrameTime = System.nanoTime();
+        long previousFrameTimeNanos = System.nanoTime();
+        long nextFrameDeadlineNanos = previousFrameTimeNanos
+                + TARGET_FRAME_DURATION_NANOS;
 
         try {
             while (running) {
@@ -798,12 +827,14 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
                 float deltaSeconds;
                 if (resetFrameTimeBaselineRequested) {
                     resetFrameTimeBaselineRequested = false;
-                    previousFrameTime = frameStartTime;
+                    previousFrameTimeNanos = frameStartTime;
+                    nextFrameDeadlineNanos = frameStartTime
+                            + TARGET_FRAME_DURATION_NANOS;
                     deltaSeconds = 0f;
                 } else {
-                    deltaSeconds = (frameStartTime - previousFrameTime)
-                            / 1_000_000_000f;
-                    previousFrameTime = frameStartTime;
+                    deltaSeconds = (frameStartTime - previousFrameTimeNanos)
+                            / (float) NANOS_PER_SECOND;
+                    previousFrameTimeNanos = frameStartTime;
                 }
 
                 if (deltaSeconds < 0f) {
@@ -815,8 +846,27 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
                 update(deltaSeconds);
                 render();
 
-                if (!paceFrame(frameStartTime)) {
-                    break;
+                long afterFrameTimeNanos = System.nanoTime();
+                long remainingNanos = nextFrameDeadlineNanos
+                        - afterFrameTimeNanos;
+
+                if (remainingNanos > 0L) {
+                    if (!sleepForNanos(remainingNanos)) {
+                        break;
+                    }
+
+                    long wakeTimeNanos = System.nanoTime();
+                    long advancedDeadlineNanos = nextFrameDeadlineNanos
+                            + TARGET_FRAME_DURATION_NANOS;
+                    if (wakeTimeNanos >= advancedDeadlineNanos) {
+                        nextFrameDeadlineNanos = wakeTimeNanos
+                                + TARGET_FRAME_DURATION_NANOS;
+                    } else {
+                        nextFrameDeadlineNanos = advancedDeadlineNanos;
+                    }
+                } else {
+                    nextFrameDeadlineNanos = afterFrameTimeNanos
+                            + TARGET_FRAME_DURATION_NANOS;
                 }
             }
         } finally {
@@ -3995,19 +4045,16 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
         dragStartPlayerCenterY = 0f;
     }
 
-    private boolean paceFrame(long frameStartTime) {
-        long elapsedNanos = System.nanoTime() - frameStartTime;
-        long remainingNanos = TARGET_FRAME_DURATION_NANOS - elapsedNanos;
-
-        if (remainingNanos <= 0L) {
+    private boolean sleepForNanos(long sleepNanos) {
+        if (sleepNanos <= 0L) {
             return true;
         }
 
-        long sleepMillis = remainingNanos / 1_000_000L;
-        int sleepNanos = (int) (remainingNanos % 1_000_000L);
+        long sleepMillis = sleepNanos / 1_000_000L;
+        int remainingNanos = (int) (sleepNanos % 1_000_000L);
 
         try {
-            Thread.sleep(sleepMillis, sleepNanos);
+            Thread.sleep(sleepMillis, remainingNanos);
         } catch (InterruptedException exception) {
             Thread.currentThread().interrupt();
             return false;
