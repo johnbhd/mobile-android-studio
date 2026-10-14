@@ -1,27 +1,768 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/main"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:gravity="center_horizontal"
-    android:orientation="vertical"
+    android:background="@color/menu_navy"
+    android:clipToPadding="false"
     android:padding="@dimen/screen_padding"
     tools:context=".activities.HowToPlayActivity">
 
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:gravity="center"
-        android:text="@string/how_to_play_title"
-        android:textSize="24sp"
-        android:textStyle="bold" />
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/how_to_play_header"
+        android:layout_width="0dp"
+        android:layout_height="@dimen/machine_selection_header_height"
+        android:background="@drawable/machine_header_background"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
 
-    <TextView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="@dimen/content_spacing"
-        android:gravity="center"
-        android:text="@string/how_to_play_placeholder" />
+        <ImageButton
+            android:id="@+id/how_to_play_back_button"
+            android:layout_width="48dp"
+            android:layout_height="match_parent"
+            android:background="@null"
+            android:contentDescription="@string/action_back"
+            android:padding="12dp"
+            android:src="@drawable/ic_arrow_back"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
 
-</LinearLayout>
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:fontFamily="sans-serif-condensed"
+            android:gravity="center"
+            android:text="@string/how_to_play_title"
+            android:textColor="@color/menu_text_secondary"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+    <androidx.core.widget.NestedScrollView
+        android:id="@+id/how_to_play_scroll"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:clipToPadding="false"
+        android:fillViewport="true"
+        android:overScrollMode="ifContentScrolls"
+        android:paddingTop="@dimen/difficulty_card_spacing"
+        android:paddingBottom="@dimen/difficulty_card_spacing"
+        app:layout_constraintBottom_toTopOf="@id/how_to_play_menu_button"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/how_to_play_header">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@drawable/menu_panel_background"
+                android:fontFamily="sans-serif-condensed"
+                android:lineSpacingExtra="2dp"
+                android:padding="@dimen/difficulty_card_padding"
+                android:text="@string/how_to_play_intro"
+                android:textColor="@color/menu_text_secondary"
+                android:textSize="13sp" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/difficulty_card_spacing"
+                android:background="@drawable/machine_card_background"
+                android:orientation="horizontal"
+                android:padding="@dimen/difficulty_card_padding">
+
+                <ImageView
+                    android:layout_width="44dp"
+                    android:layout_height="44dp"
+                    android:contentDescription="@string/how_to_play_objective_icon_description"
+                    android:src="@drawable/ic_trophy" />
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="@dimen/difficulty_card_content_spacing"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:fontFamily="sans-serif-condensed"
+                        android:text="@string/how_to_play_objective_heading"
+                        android:textColor="@color/menu_gold"
+                        android:textSize="16sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/machine_stat_spacing"
+                        android:fontFamily="sans-serif-condensed"
+                        android:lineSpacingExtra="2dp"
+                        android:text="@string/how_to_play_objective_body"
+                        android:textColor="@color/machine_text_muted"
+                        android:textSize="13sp" />
+
+                </LinearLayout>
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/difficulty_card_spacing"
+                android:background="@drawable/machine_card_background"
+                android:orientation="horizontal"
+                android:padding="@dimen/difficulty_card_padding">
+
+                <ImageView
+                    android:layout_width="44dp"
+                    android:layout_height="44dp"
+                    android:contentDescription="@string/how_to_play_movement_icon_description"
+                    android:src="@drawable/ic_swap" />
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="@dimen/difficulty_card_content_spacing"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:fontFamily="sans-serif-condensed"
+                        android:text="@string/how_to_play_movement_heading"
+                        android:textColor="@color/menu_gold"
+                        android:textSize="16sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/machine_stat_spacing"
+                        android:fontFamily="sans-serif-condensed"
+                        android:lineSpacingExtra="2dp"
+                        android:text="@string/how_to_play_movement_body"
+                        android:textColor="@color/machine_text_muted"
+                        android:textSize="13sp" />
+
+                </LinearLayout>
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/difficulty_card_spacing"
+                android:background="@drawable/machine_card_background"
+                android:orientation="horizontal"
+                android:padding="@dimen/difficulty_card_padding">
+
+                <ImageView
+                    android:layout_width="44dp"
+                    android:layout_height="44dp"
+                    android:contentDescription="@string/how_to_play_attack_icon_description"
+                    android:scaleType="fitCenter"
+                    android:src="@drawable/bullet_crewzer" />
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="@dimen/difficulty_card_content_spacing"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:fontFamily="sans-serif-condensed"
+                        android:text="@string/how_to_play_attack_heading"
+                        android:textColor="@color/menu_gold"
+                        android:textSize="16sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/machine_stat_spacing"
+                        android:fontFamily="sans-serif-condensed"
+                        android:lineSpacingExtra="2dp"
+                        android:text="@string/how_to_play_attack_body"
+                        android:textColor="@color/machine_text_muted"
+                        android:textSize="13sp" />
+
+                </LinearLayout>
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/difficulty_card_spacing"
+                android:background="@drawable/machine_card_background"
+                android:orientation="horizontal"
+                android:padding="@dimen/difficulty_card_padding">
+
+                <ImageView
+                    android:layout_width="44dp"
+                    android:layout_height="44dp"
+                    android:contentDescription="@string/how_to_play_lives_icon_description"
+                    android:src="@drawable/heart_live" />
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="@dimen/difficulty_card_content_spacing"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:fontFamily="sans-serif-condensed"
+                        android:text="@string/how_to_play_lives_heading"
+                        android:textColor="@color/menu_gold"
+                        android:textSize="16sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/machine_stat_spacing"
+                        android:fontFamily="sans-serif-condensed"
+                        android:lineSpacingExtra="2dp"
+                        android:text="@string/how_to_play_lives_body"
+                        android:textColor="@color/machine_text_muted"
+                        android:textSize="13sp" />
+
+                </LinearLayout>
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/difficulty_card_spacing"
+                android:background="@drawable/machine_card_background"
+                android:orientation="vertical"
+                android:padding="@dimen/difficulty_card_padding">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="sans-serif-condensed"
+                    android:text="@string/how_to_play_powerups_heading"
+                    android:textColor="@color/menu_gold"
+                    android:textSize="16sp"
+                    android:textStyle="bold" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/difficulty_card_spacing"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <ImageView
+                        android:layout_width="42dp"
+                        android:layout_height="42dp"
+                        android:contentDescription="@string/how_to_play_powerup_shield"
+                        android:src="@drawable/powerup_shield" />
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="@dimen/difficulty_card_content_spacing"
+                        android:layout_weight="1"
+                        android:fontFamily="sans-serif-condensed"
+                        android:lineSpacingExtra="1dp"
+                        android:text="@string/how_to_play_powerup_shield"
+                        android:textColor="@color/machine_text_muted"
+                        android:textSize="13sp" />
+
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/difficulty_card_spacing"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <ImageView
+                        android:layout_width="42dp"
+                        android:layout_height="42dp"
+                        android:contentDescription="@string/how_to_play_powerup_rapid_fire"
+                        android:src="@drawable/powerup_rapid_fire" />
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="@dimen/difficulty_card_content_spacing"
+                        android:layout_weight="1"
+                        android:fontFamily="sans-serif-condensed"
+                        android:lineSpacingExtra="1dp"
+                        android:text="@string/how_to_play_powerup_rapid_fire"
+                        android:textColor="@color/machine_text_muted"
+                        android:textSize="13sp" />
+
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/difficulty_card_spacing"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <ImageView
+                        android:layout_width="42dp"
+                        android:layout_height="42dp"
+                        android:contentDescription="@string/how_to_play_powerup_double_score"
+                        android:src="@drawable/powerup_double_score" />
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="@dimen/difficulty_card_content_spacing"
+                        android:layout_weight="1"
+                        android:fontFamily="sans-serif-condensed"
+                        android:lineSpacingExtra="1dp"
+                        android:text="@string/how_to_play_powerup_double_score"
+                        android:textColor="@color/machine_text_muted"
+                        android:textSize="13sp" />
+
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/difficulty_card_spacing"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <ImageView
+                        android:layout_width="42dp"
+                        android:layout_height="42dp"
+                        android:contentDescription="@string/how_to_play_powerup_extra_life"
+                        android:src="@drawable/powerup_extra_life" />
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="@dimen/difficulty_card_content_spacing"
+                        android:layout_weight="1"
+                        android:fontFamily="sans-serif-condensed"
+                        android:lineSpacingExtra="1dp"
+                        android:text="@string/how_to_play_powerup_extra_life"
+                        android:textColor="@color/machine_text_muted"
+                        android:textSize="13sp" />
+
+                </LinearLayout>
+
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/difficulty_card_spacing"
+                android:background="@drawable/machine_card_background"
+                android:orientation="vertical"
+                android:padding="@dimen/difficulty_card_padding">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="sans-serif-condensed"
+                    android:text="@string/how_to_play_skills_heading"
+                    android:textColor="@color/menu_gold"
+                    android:textSize="16sp"
+                    android:textStyle="bold" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/difficulty_card_spacing"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <ImageView
+                        android:layout_width="42dp"
+                        android:layout_height="42dp"
+                        android:contentDescription="@string/how_to_play_skill_crewzer_name"
+                        android:src="@drawable/skill_crewzer_speed_burst" />
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="@dimen/difficulty_card_content_spacing"
+                        android:layout_weight="1"
+                        android:fontFamily="sans-serif-condensed"
+                        android:lineSpacingExtra="1dp"
+                        android:text="@string/how_to_play_skill_crewzer"
+                        android:textColor="@color/machine_text_muted"
+                        android:textSize="13sp" />
+
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/difficulty_card_spacing"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <ImageView
+                        android:layout_width="42dp"
+                        android:layout_height="42dp"
+                        android:contentDescription="@string/how_to_play_skill_bomber_name"
+                        android:src="@drawable/skill_bomber_burst_strike" />
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="@dimen/difficulty_card_content_spacing"
+                        android:layout_weight="1"
+                        android:fontFamily="sans-serif-condensed"
+                        android:lineSpacingExtra="1dp"
+                        android:text="@string/how_to_play_skill_bomber"
+                        android:textColor="@color/machine_text_muted"
+                        android:textSize="13sp" />
+
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/difficulty_card_spacing"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <ImageView
+                        android:layout_width="42dp"
+                        android:layout_height="42dp"
+                        android:contentDescription="@string/how_to_play_skill_panzer_name"
+                        android:src="@drawable/skill_panzer_power_shot" />
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="@dimen/difficulty_card_content_spacing"
+                        android:layout_weight="1"
+                        android:fontFamily="sans-serif-condensed"
+                        android:lineSpacingExtra="1dp"
+                        android:text="@string/how_to_play_skill_panzer"
+                        android:textColor="@color/machine_text_muted"
+                        android:textSize="13sp" />
+
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/difficulty_card_spacing"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <ImageView
+                        android:layout_width="42dp"
+                        android:layout_height="42dp"
+                        android:contentDescription="@string/how_to_play_skill_frigate_name"
+                        android:src="@drawable/skill_frigate_rapid_barrage" />
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="@dimen/difficulty_card_content_spacing"
+                        android:layout_weight="1"
+                        android:fontFamily="sans-serif-condensed"
+                        android:lineSpacingExtra="1dp"
+                        android:text="@string/how_to_play_skill_frigate"
+                        android:textColor="@color/machine_text_muted"
+                        android:textSize="13sp" />
+
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/difficulty_card_spacing"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <ImageView
+                        android:layout_width="42dp"
+                        android:layout_height="42dp"
+                        android:contentDescription="@string/how_to_play_skill_lander_name"
+                        android:src="@drawable/skill_lander_energy_shield" />
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="@dimen/difficulty_card_content_spacing"
+                        android:layout_weight="1"
+                        android:fontFamily="sans-serif-condensed"
+                        android:lineSpacingExtra="1dp"
+                        android:text="@string/how_to_play_skill_lander"
+                        android:textColor="@color/machine_text_muted"
+                        android:textSize="13sp" />
+
+                </LinearLayout>
+
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/difficulty_card_spacing"
+                android:background="@drawable/machine_card_background"
+                android:orientation="horizontal"
+                android:padding="@dimen/difficulty_card_padding">
+
+                <ImageView
+                    android:layout_width="44dp"
+                    android:layout_height="44dp"
+                    android:contentDescription="@string/how_to_play_enemies_icon_description"
+                    android:src="@drawable/enemy_boizanian_spike" />
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="@dimen/difficulty_card_content_spacing"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:fontFamily="sans-serif-condensed"
+                        android:text="@string/how_to_play_enemies_heading"
+                        android:textColor="@color/menu_gold"
+                        android:textSize="16sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/machine_stat_spacing"
+                        android:fontFamily="sans-serif-condensed"
+                        android:lineSpacingExtra="2dp"
+                        android:text="@string/how_to_play_enemies_body"
+                        android:textColor="@color/machine_text_muted"
+                        android:textSize="13sp" />
+
+                </LinearLayout>
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/difficulty_card_spacing"
+                android:background="@drawable/machine_card_background"
+                android:orientation="vertical"
+                android:padding="@dimen/difficulty_card_padding">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="sans-serif-condensed"
+                    android:text="@string/how_to_play_difficulty_heading"
+                    android:textColor="@color/menu_gold"
+                    android:textSize="16sp"
+                    android:textStyle="bold" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/difficulty_card_spacing"
+                    android:orientation="horizontal">
+
+                    <View
+                        android:layout_width="6dp"
+                        android:layout_height="match_parent"
+                        android:minHeight="42dp"
+                        android:background="@color/difficulty_easy" />
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="@dimen/difficulty_card_content_spacing"
+                        android:layout_weight="1"
+                        android:fontFamily="sans-serif-condensed"
+                        android:text="@string/how_to_play_difficulty_easy"
+                        android:textColor="@color/difficulty_easy"
+                        android:textSize="13sp" />
+
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/difficulty_card_spacing"
+                    android:orientation="horizontal">
+
+                    <View
+                        android:layout_width="6dp"
+                        android:layout_height="match_parent"
+                        android:minHeight="42dp"
+                        android:background="@color/difficulty_normal" />
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="@dimen/difficulty_card_content_spacing"
+                        android:layout_weight="1"
+                        android:fontFamily="sans-serif-condensed"
+                        android:text="@string/how_to_play_difficulty_normal"
+                        android:textColor="@color/difficulty_normal"
+                        android:textSize="13sp" />
+
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/difficulty_card_spacing"
+                    android:orientation="horizontal">
+
+                    <View
+                        android:layout_width="6dp"
+                        android:layout_height="match_parent"
+                        android:minHeight="42dp"
+                        android:background="@color/difficulty_hard" />
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="@dimen/difficulty_card_content_spacing"
+                        android:layout_weight="1"
+                        android:fontFamily="sans-serif-condensed"
+                        android:text="@string/how_to_play_difficulty_hard"
+                        android:textColor="@color/difficulty_hard"
+                        android:textSize="13sp" />
+
+                </LinearLayout>
+
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/difficulty_card_spacing"
+                android:background="@drawable/machine_card_background"
+                android:orientation="horizontal"
+                android:padding="@dimen/difficulty_card_padding">
+
+                <ImageView
+                    android:layout_width="44dp"
+                    android:layout_height="44dp"
+                    android:contentDescription="@string/how_to_play_pause_icon_description"
+                    android:src="@drawable/ic_pause" />
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="@dimen/difficulty_card_content_spacing"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:fontFamily="sans-serif-condensed"
+                        android:text="@string/how_to_play_pause_heading"
+                        android:textColor="@color/menu_gold"
+                        android:textSize="16sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/machine_stat_spacing"
+                        android:fontFamily="sans-serif-condensed"
+                        android:lineSpacingExtra="2dp"
+                        android:text="@string/how_to_play_pause_body"
+                        android:textColor="@color/machine_text_muted"
+                        android:textSize="13sp" />
+
+                </LinearLayout>
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/difficulty_card_spacing"
+                android:background="@drawable/machine_card_background"
+                android:orientation="horizontal"
+                android:padding="@dimen/difficulty_card_padding">
+
+                <ImageView
+                    android:layout_width="44dp"
+                    android:layout_height="44dp"
+                    android:contentDescription="@string/how_to_play_game_over_icon_description"
+                    android:src="@drawable/ic_trophy" />
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="@dimen/difficulty_card_content_spacing"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:fontFamily="sans-serif-condensed"
+                        android:text="@string/how_to_play_game_over_heading"
+                        android:textColor="@color/menu_gold"
+                        android:textSize="16sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/machine_stat_spacing"
+                        android:fontFamily="sans-serif-condensed"
+                        android:lineSpacingExtra="2dp"
+                        android:text="@string/how_to_play_game_over_body"
+                        android:textColor="@color/machine_text_muted"
+                        android:textSize="13sp" />
+
+                </LinearLayout>
+            </LinearLayout>
+
+        </LinearLayout>
+    </androidx.core.widget.NestedScrollView>
+
+    <androidx.appcompat.widget.AppCompatButton
+        android:id="@+id/how_to_play_menu_button"
+        android:layout_width="0dp"
+        android:layout_height="@dimen/machine_selection_continue_height"
+        android:background="@drawable/menu_button_primary"
+        android:backgroundTint="@null"
+        android:fontFamily="sans-serif-condensed"
+        android:letterSpacing="0.08"
+        android:minHeight="@dimen/machine_selection_continue_height"
+        android:minWidth="0dp"
+        android:stateListAnimator="@null"
+        android:text="@string/how_to_play_back_to_menu"
+        android:textColor="@color/menu_text_primary"
+        android:textSize="15sp"
+        android:textStyle="bold"
+        app:backgroundTint="@null"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

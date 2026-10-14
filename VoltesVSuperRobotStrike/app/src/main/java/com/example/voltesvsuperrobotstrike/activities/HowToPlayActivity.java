@@ -22,6 +22,12 @@ public class HowToPlayActivity extends AppCompatActivity {
         GameMusicManager.getInstance(this).playMenuMusic();
 
         applySystemBarInsets();
+        setupNavigation();
+    }
+
+    private void setupNavigation() {
+        findViewById(R.id.how_to_play_back_button).setOnClickListener(view -> finish());
+        findViewById(R.id.how_to_play_menu_button).setOnClickListener(view -> finish());
     }
 
     private void applySystemBarInsets() {
