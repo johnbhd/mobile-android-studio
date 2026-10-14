@@ -3,9 +3,6 @@ package com.example.voltesvsuperrobotstrike;
 import android.content.Context;
 import android.content.SharedPreferences;
 
-/**
- * Stores the single local personal-best score for the game.
- */
 public final class ScorePreferences {
 
     public static final String PREFERENCES_NAME = "voltes_v_game_preferences";

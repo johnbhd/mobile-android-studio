@@ -4,7 +4,6 @@ import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 
-/** A temporary Bomber skill projectile owned and updated by GameView. */
 public final class BombardmentBomb {
 
     private final Bitmap bitmap;

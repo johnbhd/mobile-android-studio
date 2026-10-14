@@ -1,12 +1,12 @@
 package com.example.voltesvsuperrobotstrike;
 
-import android.app.Activity;
+import  android.app.Activity;
 import android.app.Application;
 import android.os.Bundle;
 
 import com.example.voltesvsuperrobotstrike.audio.GameMusicManager;
 
-/** Application owner for process-wide music and foreground/background state. */
+
 public final class VoltesVApplication extends Application {
 
     private GameMusicManager musicManager;

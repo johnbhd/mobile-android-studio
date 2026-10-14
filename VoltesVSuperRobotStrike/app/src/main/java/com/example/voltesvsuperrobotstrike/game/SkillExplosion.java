@@ -5,7 +5,7 @@ import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.RectF;
 
-/** Short-lived bitmap or Canvas explosion effect. */
+
 public final class SkillExplosion {
 
     private final Bitmap bitmap;
